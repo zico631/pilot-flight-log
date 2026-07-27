@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pilot Flight Log</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --panel:#ffffff;
+    --panel-2:#f2f4f7;
+    --panel-3:#e9edf2;
+    --border:#d4dae1;
+    --text:#161f29;
+    --muted:#48545f;
+    --muted-dim:#6b7784;
+    --cyan:#00679b;
+    --cyan-dim:#cfe8f3;
+    --amber:#a15c00;
+    --green:#0a7d46;
+    --red:#c22f2f;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --font-mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Consolas,monospace;
+    --radius:8px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-sans);
+    font-size:15.5px;
+    min-height:100vh;
+  }
+  ::selection{background:var(--cyan-dim);color:var(--text);}
+  a{color:var(--cyan);}
+
+  /* ---------- Top bar ---------- */
+  header.topbar{
+    position:sticky; top:0; z-index:20;
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
+    gap:12px;
+    padding:14px 24px;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+  }
+  .brand{display:flex; align-items:center; gap:14px;}
+  .brand-mark{
+    font-size:28px;
+    color:var(--cyan);
+    transform:rotate(-15deg) translateY(2px);
+    display:inline-block;
+  }
+  .brand h1{
+    margin:0; font-size:19px; letter-spacing:2px; font-weight:800; color:var(--text);
+  }
+  .brand-sub{margin:2px 0 0; font-size:13px; color:var(--muted); letter-spacing:0.3px; font-weight:500;}
+
+  nav.tabs{display:flex; gap:4px; flex-wrap:wrap;}
+  .tab-btn{
+    background:transparent; border:1px solid transparent; color:var(--muted);
+    padding:9px 16px; font-size:14.5px; font-weight:700; letter-spacing:0.2px;
+    border-radius:6px; cursor:pointer; transition:color .15s, background .15s, border-color .15s;
+    font-family:var(--font-sans);
+  }
+  .tab-btn:hover{color:var(--text); background:var(--panel-2);}
+  .tab-btn.active{color:var(--cyan); border-color:var(--cyan-dim); background:var(--cyan-dim);}
+  .tab-btn:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible{
+    outline:2px solid var(--cyan); outline-offset:2px;
+  }
+
+  main{max-width:1180px; margin:0 auto; padding:20px 20px 60px;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block; animation:fade .18s ease-out;}
+  @media (prefers-reduced-motion: reduce){ .tab-panel.active{animation:none;} }
+  @keyframes fade{from{opacity:0; transform:translateY(3px);} to{opacity:1; transform:none;}}
+
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:18px 20px; margin-bottom:20px;
+    box-shadow:0 1px 2px rgba(16,24,32,0.04);
+  }
+  .panel h2{
+    margin:0 0 14px; font-size:14.5px; letter-spacing:1.2px; text-transform:uppercase;
+    color:var(--cyan); font-weight:800;
+  }
+  .panel p.hint{color:var(--muted); font-size:13.5px; margin:-6px 0 14px; line-height:1.55; font-weight:500;}
+
+  /* ---------- Entry form ---------- */
+  fieldset{
+    border:1px solid var(--border); border-radius:6px; padding:12px 14px 14px;
+    margin:0 0 14px; min-width:0;
+  }
+  legend{
+    font-size:12px; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted);
+    padding:0 6px; font-weight:800;
+  }
+  .form-grid{display:flex; flex-direction:column; gap:14px;}
+  .row{display:grid; gap:10px;}
+  .row.cols-3{grid-template-columns:repeat(3,1fr);}
+  .row.cols-2{grid-template-columns:repeat(2,1fr);}
+  .row.cols-4{grid-template-columns:repeat(4,1fr);}
+  .row.cols-5{grid-template-columns:repeat(5,1fr);}
+  .field{display:flex; flex-direction:column; gap:5px; min-width:0;}
+  .field label{font-size:12.5px; color:var(--text); letter-spacing:0.2px; font-weight:700;}
+  .field input, .field textarea, .field select{
+    background:var(--panel); border:1.5px solid var(--border); color:var(--text);
+    border-radius:6px; padding:8px 9px; font-size:15px; font-weight:500; font-family:var(--font-sans);
+    width:100%;
+  }
+  .date-select-row{display:flex; gap:6px;}
+  .date-select-row select{font-family:var(--font-mono); cursor:pointer;}
+  .date-select-row select#f-date-month{flex:1.5; font-family:var(--font-sans);}
+  .date-select-row select#f-date-day{flex:0.8;}
+  .date-select-row select#f-date-year{flex:1;}
+  #f-model, #f-ident, #f-from, #f-via, #f-to{text-transform:uppercase;}
+  #f-model::placeholder, #f-ident::placeholder, #f-from::placeholder, #f-via::placeholder, #f-to::placeholder{text-transform:none;}
+  .field input.computed{background:var(--panel-2); color:var(--cyan); font-weight:700; cursor:default;}
+  .field input[type=number]{font-family:var(--font-mono);}
+  .field textarea{resize:vertical; min-height:44px; font-family:var(--font-sans);}
+  .field input::placeholder{color:var(--muted-dim);}
+  .form-actions{display:flex; gap:10px; align-items:center; margin-top:4px;}
+
+  button.primary{
+    background:var(--cyan); color:#ffffff; border:none; font-weight:800;
+    padding:10px 18px; border-radius:6px; cursor:pointer; font-size:14.5px;
+    letter-spacing:0.2px; transition:filter .15s;
+  }
+  button.primary:hover{filter:brightness(1.15);}
+  button.ghost{
+    background:transparent; border:1.5px solid var(--border); color:var(--text);
+    padding:9px 16px; border-radius:6px; cursor:pointer; font-size:14px; font-weight:700;
+  }
+  button.ghost:hover{color:var(--cyan); border-color:var(--cyan);}
+  button.small{padding:5px 9px; font-size:13px;}
+  button.danger-outline{background:transparent;border:1.5px solid #e3b8b8;color:var(--red); font-weight:700;}
+  button.danger-outline:hover{background:#fdf0f0;}
+
+  /* ---------- Tables ---------- */
+  .table-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius);}
+  table{width:100%; border-collapse:collapse; font-size:14px; min-width:960px;}
+  thead th{
+    background:var(--panel-2); color:var(--text); text-transform:uppercase;
+    font-size:11.5px; font-weight:800; letter-spacing:0.5px; text-align:left; padding:10px 8px;
+    border-bottom:1px solid var(--border); white-space:nowrap; position:sticky; top:0;
+  }
+  thead th.num, td.num{text-align:right;}
+  tbody td{padding:9px 8px; border-bottom:1px solid var(--border); vertical-align:top; font-weight:500;}
+  tbody td.num{font-family:var(--font-mono);}
+  tbody tr:hover{background:var(--cyan-dim);}
+  tbody tr:nth-child(even){background:var(--panel-2);}
+  .empty-row td{color:var(--muted); text-align:center; padding:26px 8px; font-style:italic;}
+  .row-actions{display:flex; gap:6px; white-space:nowrap;}
+  .sortable{cursor:pointer; user-select:none;}
+  .sortable:hover{color:var(--cyan);}
+  .sort-ind{opacity:0.7; font-size:10px; margin-left:3px;}
+
+  /* ---------- Stat cards ---------- */
+  .stat-grid{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:12px; margin-bottom:20px;
+  }
+  .stat-card{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:14px 16px;
+    box-shadow:0 1px 2px rgba(16,24,32,0.04);
+  }
+  .stat-card.hero{
+    grid-column:span 2; background:var(--panel-3);
+    border-color:var(--cyan-dim);
+  }
+  .stat-label{font-size:11.5px; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); font-weight:700;}
+  .stat-value{font-family:var(--font-mono); font-size:27px; font-weight:700; color:var(--cyan); margin-top:6px;}
+  .stat-card.hero .stat-value{font-size:33px;}
+  .stat-value .unit{font-size:14px; color:var(--muted); font-weight:500; margin-left:5px;}
+  .stat-value.amber{color:var(--amber);}
+  .stat-value.green{color:var(--green);}
+  .stat-sub{font-size:12px; color:var(--muted); margin-top:4px; font-weight:500;}
+
+  .instr-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px;}
+  .instr-box{background:var(--panel-2); border:1px solid var(--border); border-radius:6px; padding:12px 14px;}
+  .instr-box .k{font-size:12px; color:var(--muted); font-weight:600;}
+  .instr-box .v{font-family:var(--font-mono); font-size:21px; font-weight:700; color:var(--text); margin-top:4px;}
+
+  footer{text-align:center; color:var(--muted-dim); font-size:13px; font-weight:500; padding:20px 0 40px;}
+
+  @media (max-width:760px){
+    header.topbar{flex-direction:column; align-items:flex-start;}
+    .row.cols-3,.row.cols-4,.row.cols-5{grid-template-columns:repeat(2,1fr);}
+    .stat-card.hero{grid-column:span 2;}
+  }
+  @media (max-width:480px){
+    .row.cols-2,.row.cols-3,.row.cols-4,.row.cols-5{grid-template-columns:1fr 1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">&#9992;</span>
+    <div>
+      <h1>PILOT FLIGHT LOG</h1>
+      <p class="brand-sub">Personal flight time record</p>
+    </div>
+  </div>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="log">Log Entries</button>
+    <button class="tab-btn" data-tab="summary">Summary</button>
+    <button class="tab-btn" data-tab="settings">Carried Forward &amp; Backup</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ============ LOG ENTRIES TAB ============ -->
+  <section id="tab-log" class="tab-panel active">
+
+    <div class="panel">
+      <h2 id="form-title">New Flight</h2>
+      <form id="entry-form" class="form-grid" autocomplete="off">
+
+        <fieldset>
+          <legend>Flight Info</legend>
+          <div class="row cols-3">
+            <div class="field">
+              <label for="f-date-month">Date</label>
+              <div class="date-select-row">
+                <select id="f-date-month" aria-label="Month" required></select>
+                <select id="f-date-day" aria-label="Day" required></select>
+                <select id="f-date-year" aria-label="Year" required></select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="f-model">Aircraft Make/Model</label>
+              <input type="text" id="f-model" list="model-options" placeholder="e.g. C172SP" required>
+              <datalist id="model-options"></datalist>
+            </div>
+            <div class="field">
+              <label for="f-ident">Aircraft Ident.</label>
+              <input type="text" id="f-ident" list="ident-options" placeholder="e.g. N12345">
+              <datalist id="ident-options"></datalist>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Route</legend>
+          <div class="row cols-3">
+            <div class="field">
+              <label for="f-from">From</label>
+              <input type="text" id="f-from" value="KFRG" placeholder="KFRG">
+            </div>
+            <div class="field">
+              <label for="f-via">Via (Stops)</label>
+              <input type="text" id="f-via" placeholder="KMVY KPVD">
+            </div>
+            <div class="field">
+              <label for="f-to">To</label>
+              <input type="text" id="f-to" value="KFRG" placeholder="KFRG">
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="row cols-3">
+          <fieldset>
+            <legend>Total Time</legend>
+            <div class="row cols-2">
+              <div class="field">
+                <label for="f-total">Total Duration</label>
+                <input type="number" id="f-total" step="0.1" min="0" required>
+              </div>
+              <div class="field">
+                <label for="f-xc">Cross Country</label>
+                <input type="number" id="f-xc" step="0.1" min="0">
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Aircraft Category/Class</legend>
+            <div class="row cols-2">
+              <div class="field">
+                <label for="f-asel">ASEL</label>
+                <input type="number" id="f-asel" step="0.1" min="0">
+              </div>
+              <div class="field">
+                <label for="f-amel">AMEL</label>
+                <input type="number" id="f-amel" step="0.1" min="0">
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Landings</legend>
+            <div class="row cols-2">
+              <div class="field">
+                <label for="f-dayldg">Day Ldg</label>
+                <input type="number" id="f-dayldg" step="1" min="0">
+              </div>
+              <div class="field">
+                <label for="f-nightldg">Night Ldg</label>
+                <input type="number" id="f-nightldg" step="1" min="0">
+              </div>
+            </div>
+          </fieldset>
+        </div>
+
+        <fieldset>
+          <legend>Instrument Time</legend>
+          <div class="row cols-4">
+            <div class="field">
+              <label for="f-night">Night</label>
+              <input type="number" id="f-night" step="0.1" min="0">
+            </div>
+            <div class="field">
+              <label for="f-actual">Actual Instr</label>
+              <input type="number" id="f-actual" step="0.1" min="0">
+            </div>
+            <div class="field">
+              <label for="f-sim">Sim Instr</label>
+              <input type="number" id="f-sim" step="0.1" min="0" title="Logged as Airplane or AATD automatically, based on whether ASEL/AMEL is filled in for this row.">
+            </div>
+            <div class="field">
+              <label for="f-approach">Approach &amp; Type</label>
+              <input type="text" id="f-approach" placeholder="ILS 4 x1, RNAV 33 x1">
+            </div>
+          </div>
+          <p class="hint" style="margin:10px 0 0;">If this row has no ASEL/AMEL entered, Sim Instr is treated as an AATD/simulator session. If ASEL or AMEL is entered, Sim Instr is treated as time flown in the airplane.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Pilot Function Time</legend>
+          <div class="row cols-5">
+            <div class="field">
+              <label for="f-solo">Solo</label>
+              <input type="number" id="f-solo" step="0.1" min="0">
+            </div>
+            <div class="field">
+              <label for="f-pic">PIC</label>
+              <input type="number" id="f-pic" step="0.1" min="0">
+            </div>
+            <div class="field">
+              <label for="f-stupic">STUPIC <span style="font-weight:500; text-transform:none; letter-spacing:0;">(auto)</span></label>
+              <input type="number" id="f-stupic" step="0.1" min="0" readonly class="computed" title="Automatically calculated as the lesser of PIC and Dual Received for this flight.">
+            </div>
+            <div class="field">
+              <label for="f-dual">Dual Received</label>
+              <input type="number" id="f-dual" step="0.1" min="0">
+            </div>
+            <div class="field">
+              <label for="f-cfi">As CFI</label>
+              <input type="number" id="f-cfi" step="0.1" min="0">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Notes</legend>
+          <div class="field">
+            <label for="f-remarks">Notes/Remarks</label>
+            <textarea id="f-remarks" rows="2"></textarea>
+          </div>
+        </fieldset>
+
+        <div class="form-actions">
+          <button type="submit" class="primary" id="submit-btn">Add Flight</button>
+          <button type="button" class="ghost" id="cancel-edit" hidden>Cancel Edit</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel" style="padding-bottom:8px;">
+      <h2 style="display:inline-block;">Flight Entries</h2>
+      <span id="entry-count" style="color:var(--muted); font-size:13px; font-weight:600; margin-left:8px;"></span>
+      <div class="table-wrap" style="margin-top:12px;">
+        <table id="entries-table">
+          <thead>
+            <tr>
+              <th class="sortable" data-key="date">Date <span class="sort-ind"></span></th>
+              <th>Make/Model</th>
+              <th>Ident</th>
+              <th>Route</th>
+              <th class="num">Total</th>
+              <th class="num">ASEL</th>
+              <th class="num">AMEL</th>
+              <th class="num">Day</th>
+              <th class="num">Night Ldg</th>
+              <th class="num">Night</th>
+              <th class="num">Act Instr</th>
+              <th class="num">Sim Instr</th>
+              <th>Approach</th>
+              <th class="num">XC</th>
+              <th class="num">Solo</th>
+              <th class="num">PIC</th>
+              <th class="num">STUPIC</th>
+              <th class="num">Dual</th>
+              <th class="num">CFI</th>
+              <th>Remarks</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="entries-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SUMMARY TAB ============ -->
+  <section id="tab-summary" class="tab-panel">
+
+    <div class="stat-grid" id="grand-stats"></div>
+
+    <div class="panel">
+      <h2>Instrument Time Breakdown</h2>
+      <p class="hint">Simulated instrument is split by whether the row had ASEL/AMEL time (airplane) or not (AATD/simulator device). Total airplane time always comes from ASEL + AMEL, never from Total Duration, so simulator sessions never inflate airplane totals.</p>
+      <div class="instr-grid" id="instr-breakdown"></div>
+    </div>
+
+    <div class="panel">
+      <h2>By Aircraft Make/Model</h2>
+      <p class="hint">Grouped by exactly what you type in "Aircraft Make/Model" (case/spacing-insensitive — C172SP, C172K, C172I, and C172N are kept separate). Carried-forward totals are not split by model, since prior logbooks weren't tracked at this level of detail — figures below reflect entries logged in this app.</p>
+      <div class="table-wrap">
+        <table id="model-table">
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th class="num">Flights</th>
+              <th class="num">Airplane Time</th>
+              <th class="num">PIC</th>
+              <th class="num">STUPIC</th>
+              <th class="num">Student (Dual Recv)</th>
+              <th class="num">Solo</th>
+              <th class="num">Cross Country</th>
+              <th class="num">Night</th>
+              <th class="num">Actual Instr</th>
+              <th class="num">Sim Instr</th>
+              <th class="num">As CFI</th>
+            </tr>
+          </thead>
+          <tbody id="model-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS TAB ============ -->
+  <section id="tab-settings" class="tab-panel">
+
+    <div class="panel">
+      <h2>Carried Forward From Previous Logbook</h2>
+      <p class="hint">Enter your prior logbook totals once. These add into the Grand Total on the Summary tab but are not broken out by aircraft model or STUPIC (see note above).</p>
+      <form id="cf-form" class="form-grid">
+        <div class="row cols-4">
+          <div class="field"><label for="cf-total">Total Duration</label><input type="number" id="cf-total" step="0.1" min="0"></div>
+          <div class="field"><label for="cf-asel">ASEL</label><input type="number" id="cf-asel" step="0.1" min="0"></div>
+          <div class="field"><label for="cf-amel">AMEL</label><input type="number" id="cf-amel" step="0.1" min="0"></div>
+          <div class="field"><label for="cf-xc">Cross Country</label><input type="number" id="cf-xc" step="0.1" min="0"></div>
+        </div>
+        <div class="row cols-4">
+          <div class="field"><label for="cf-dayldg">Day Ldg</label><input type="number" id="cf-dayldg" step="1" min="0"></div>
+          <div class="field"><label for="cf-nightldg">Night Ldg</label><input type="number" id="cf-nightldg" step="1" min="0"></div>
+          <div class="field"><label for="cf-night">Night</label><input type="number" id="cf-night" step="0.1" min="0"></div>
+          <div class="field"><label for="cf-actual">Actual Instr</label><input type="number" id="cf-actual" step="0.1" min="0"></div>
+        </div>
+        <div class="row cols-4">
+          <div class="field"><label for="cf-simair">Sim Instr (Airplane)</label><input type="number" id="cf-simair" step="0.1" min="0"></div>
+          <div class="field"><label for="cf-simaatd">Sim Instr (AATD)</label><input type="number" id="cf-simaatd" step="0.1" min="0"></div>
+          <div class="field"><label for="cf-solo">Solo</label><input type="number" id="cf-solo" step="0.1" min="0"></div>
+          <div class="field"><label for="cf-pic">PIC</label><input type="number" id="cf-pic" step="0.1" min="0"></div>
+        </div>
+        <div class="row cols-3">
+          <div class="field"><label for="cf-stupic">STUPIC</label><input type="number" id="cf-stupic" step="0.1" min="0"></div>
+          <div class="field"><label for="cf-dual">Dual Received</label><input type="number" id="cf-dual" step="0.1" min="0"></div>
+          <div class="field"><label for="cf-cfi">As CFI</label><input type="number" id="cf-cfi" step="0.1" min="0"></div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="primary">Save Carried Forward Totals</button>
+          <span id="cf-saved-msg" style="color:var(--green); font-size:13px; font-weight:600;"></span>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2>Backup &amp; Restore</h2>
+      <p class="hint">This is your logbook of record — back it up regularly. Download a backup file, or export CSV for printing/spreadsheet use. Restoring from a backup replaces everything currently in the app.</p>
+      <div class="form-actions" style="flex-wrap:wrap;">
+        <button type="button" class="ghost" id="export-json">Download Backup (.json)</button>
+        <button type="button" class="ghost" id="export-csv">Export CSV</button>
+        <label class="ghost" style="display:inline-flex; align-items:center; cursor:pointer;">
+          Restore from Backup
+          <input type="file" id="import-json" accept="application/json" style="display:none;">
+        </label>
+        <button type="button" class="danger-outline small" id="reset-all" style="margin-left:auto;">Erase All Data</button>
+      </div>
+      <p id="storage-mode" class="hint" style="margin-top:14px; margin-bottom:0;"></p>
+    </div>
+  </section>
+
+</main>
+
+<footer>Data is stored locally in this browser/session. Use the backup button regularly.</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- storage adapter (works inside a Claude artifact AND as a standalone hosted file) ----------
+  var hasClaudeStorage = (typeof window.storage !== "undefined" && window.storage && typeof window.storage.get === "function");
+
+  function storageGet(key){
+    if (hasClaudeStorage){
+      return window.storage.get(key, false).then(function(r){ return r ? r.value : null; }).catch(function(){ return null; });
+    }
+    try{ return Promise.resolve(localStorage.getItem(key)); }
+    catch(e){ return Promise.resolve(null); }
+  }
+  function storageSet(key, value){
+    if (hasClaudeStorage){
+      return window.storage.set(key, value, false).catch(function(e){ console.error("storage.set failed", e); });
+    }
+    try{ localStorage.setItem(key, value); }catch(e){ console.error("localStorage.setItem failed", e); }
+    return Promise.resolve();
+  }
+
+  var STORE_KEY = "pilotlog:entries";
+  var CF_KEY = "pilotlog:carriedforward";
+
+  // ---------- state ----------
+  var entries = [];
+  var carriedForward = emptyCF();
+  var editingId = null;
+  var sortKey = "date";
+  var sortDir = "desc";
+
+  function emptyCF(){
+    return {total:0,asel:0,amel:0,dayLdg:0,nightLdg:0,night:0,actualInstr:0,
+      simInstrAirplane:0,simInstrAATD:0,xc:0,solo:0,pic:0,dual:0,stupic:0,cfi:0};
+  }
+
+  function num(v){ var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+  function normalizeModel(m){ return (m||"").trim().toUpperCase(); }
+  function uid(){ return "e" + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+  function fmt1(n){ return (Math.round(n*10)/10).toFixed(1); }
+  function fmt0(n){ return String(Math.round(n)); }
+
+  // ---------- date select (Month / Day / Year dropdowns) ----------
+  var MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var dateMonthEl, dateDayEl, dateYearEl;
+
+  function daysInMonth(year, month){ return new Date(year, month, 0).getDate(); } // month is 1-12
+
+  function populateDateSelects(){
+    dateMonthEl = document.getElementById("f-date-month");
+    dateDayEl = document.getElementById("f-date-day");
+    dateYearEl = document.getElementById("f-date-year");
+
+    dateMonthEl.innerHTML = MONTH_NAMES.map(function(name, i){
+      var mm = String(i+1).padStart(2,"0");
+      return "<option value='" + mm + "'>" + name + "</option>";
+    }).join("");
+
+    var thisYear = new Date().getFullYear();
+    var minYear = thisYear - 15; // comfortably covers years well before 2022, stays current automatically
+    var yearOpts = [];
+    for (var y = thisYear; y >= minYear; y--){ yearOpts.push(y); }
+    dateYearEl.innerHTML = yearOpts.map(function(y){ return "<option value='" + y + "'>" + y + "</option>"; }).join("");
+
+    updateDayOptions();
+    dateMonthEl.addEventListener("change", function(){ updateDayOptions(); });
+    dateYearEl.addEventListener("change", function(){ updateDayOptions(); });
+  }
+
+  function updateDayOptions(){
+    var month = parseInt(dateMonthEl.value, 10) || (new Date().getMonth()+1);
+    var year = parseInt(dateYearEl.value, 10) || new Date().getFullYear();
+    var maxDay = daysInMonth(year, month);
+    var prevSelected = parseInt(dateDayEl.value, 10) || 1;
+    var opts = [];
+    for (var d = 1; d <= maxDay; d++){ opts.push(d); }
+    dateDayEl.innerHTML = opts.map(function(d){
+      var dd = String(d).padStart(2,"0");
+      return "<option value='" + dd + "'>" + d + "</option>";
+    }).join("");
+    dateDayEl.value = String(Math.min(prevSelected, maxDay)).padStart(2,"0");
+  }
+
+  function getDateValue(){
+    return dateYearEl.value + "-" + dateMonthEl.value + "-" + dateDayEl.value;
+  }
+  function setDateValue(iso){
+    if (!iso) iso = new Date().toISOString().slice(0,10);
+    var parts = iso.split("-");
+    var year = parts[0], month = parts[1], day = parts[2];
+    dateYearEl.value = year;
+    dateMonthEl.value = month;
+    updateDayOptions();
+    dateDayEl.value = day;
+  }
+
+  // ---------- aggregation (verified separately) ----------
+  function emptyTotals(){
+    return {total:0,asel:0,amel:0,dayLdg:0,nightLdg:0,night:0,actualInstr:0,
+      simInstrAirplane:0,simInstrAATD:0,xc:0,solo:0,pic:0,picExclCfi:0,dual:0,stupic:0,cfi:0};
+  }
+  function emptyModelTotals(){
+    return {flights:0,airplaneTime:0,pic:0,stupic:0,dual:0,solo:0,xc:0,night:0,actualInstr:0,simInstr:0,cfi:0};
+  }
+  function aggregate(){
+    var totals = emptyTotals();
+    var byModel = {};
+    entries.forEach(function(e){
+      var isAirplaneRow = (num(e.asel) + num(e.amel)) > 0;
+      totals.total += num(e.total);
+      totals.asel += num(e.asel);
+      totals.amel += num(e.amel);
+      totals.dayLdg += num(e.dayLdg);
+      totals.nightLdg += num(e.nightLdg);
+      totals.night += num(e.night);
+      totals.actualInstr += num(e.actualInstr);
+      if (isAirplaneRow) totals.simInstrAirplane += num(e.simInstr);
+      else totals.simInstrAATD += num(e.simInstr);
+      totals.xc += num(e.xc);
+      totals.solo += num(e.solo);
+      totals.pic += num(e.pic);
+      totals.picExclCfi += Math.max(0, num(e.pic) - num(e.cfi));
+      totals.dual += num(e.dual);
+      totals.stupic += num(e.stupic);
+      totals.cfi += num(e.cfi);
+
+      var key = normalizeModel(e.model) || "(UNSPECIFIED)";
+      if (!byModel[key]) byModel[key] = emptyModelTotals();
+      var m = byModel[key];
+      m.flights += 1;
+      m.airplaneTime += num(e.asel) + num(e.amel);
+      m.pic += num(e.pic);
+      m.stupic += num(e.stupic);
+      m.dual += num(e.dual);
+      m.solo += num(e.solo);
+      m.xc += num(e.xc);
+      m.night += num(e.night);
+      m.actualInstr += num(e.actualInstr);
+      m.simInstr += num(e.simInstr);
+      m.cfi += num(e.cfi);
+    });
+    Object.keys(carriedForward).forEach(function(k){
+      if (totals[k] !== undefined) totals[k] += num(carriedForward[k]);
+    });
+    totals.picExclCfi += Math.max(0, num(carriedForward.pic) - num(carriedForward.cfi));
+    return {totals: totals, byModel: byModel};
+  }
+
+  // ---------- persistence ----------
+  function saveEntries(){ return storageSet(STORE_KEY, JSON.stringify(entries)); }
+  function saveCF(){ return storageSet(CF_KEY, JSON.stringify(carriedForward)); }
+
+  function loadAll(){
+    return Promise.all([storageGet(STORE_KEY), storageGet(CF_KEY)]).then(function(res){
+      try{ entries = res[0] ? JSON.parse(res[0]) : []; }catch(e){ entries = []; }
+      try{ carriedForward = res[1] ? Object.assign(emptyCF(), JSON.parse(res[1])) : emptyCF(); }catch(e){ carriedForward = emptyCF(); }
+    });
+  }
+
+  // ---------- DOM refs ----------
+  var els = {};
+  ["f-date-month","f-date-day","f-date-year","f-model","f-ident","f-from","f-via","f-to","f-total","f-asel","f-amel",
+   "f-dayldg","f-nightldg","f-night","f-actual","f-sim","f-approach","f-xc","f-solo",
+   "f-pic","f-stupic","f-dual","f-cfi","f-remarks",
+   "cf-total","cf-asel","cf-amel","cf-xc","cf-dayldg","cf-nightldg","cf-night","cf-actual",
+   "cf-simair","cf-simaatd","cf-solo","cf-pic","cf-stupic","cf-dual","cf-cfi"
+  ].forEach(function(id){ els[id] = document.getElementById(id); });
+
+  var entryForm = document.getElementById("entry-form");
+  var cfForm = document.getElementById("cf-form");
+  var entriesTbody = document.getElementById("entries-tbody");
+  var modelTbody = document.getElementById("model-tbody");
+  var modelOptions = document.getElementById("model-options");
+  var identOptions = document.getElementById("ident-options");
+  var entryCountEl = document.getElementById("entry-count");
+  var submitBtn = document.getElementById("submit-btn");
+  var cancelEditBtn = document.getElementById("cancel-edit");
+  var formTitle = document.getElementById("form-title");
+
+  // ---------- tabs ----------
+  document.querySelectorAll(".tab-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      document.querySelectorAll(".tab-btn").forEach(function(b){ b.classList.remove("active"); });
+      document.querySelectorAll(".tab-panel").forEach(function(p){ p.classList.remove("active"); });
+      btn.classList.add("active");
+      document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+      if (btn.dataset.tab === "summary") renderSummary();
+    });
+  });
+
+  // ---------- STUPIC auto-calculation ----------
+  function updateStupic(){
+    var pic = num(els["f-pic"].value);
+    var dual = num(els["f-dual"].value);
+    var stupic = Math.min(pic, dual);
+    els["f-stupic"].value = stupic ? (Math.round(stupic*10)/10) : "";
+  }
+  els["f-pic"].addEventListener("input", updateStupic);
+  els["f-dual"].addEventListener("input", updateStupic);
+
+  // ---------- form <-> entry object ----------
+  function readForm(){
+    return {
+      date: getDateValue(),
+      model: els["f-model"].value,
+      ident: els["f-ident"].value.trim().toUpperCase(),
+      from: els["f-from"].value.trim().toUpperCase(),
+      via: els["f-via"].value.trim().toUpperCase(),
+      to: els["f-to"].value.trim().toUpperCase(),
+      total: num(els["f-total"].value),
+      asel: num(els["f-asel"].value),
+      amel: num(els["f-amel"].value),
+      dayLdg: num(els["f-dayldg"].value),
+      nightLdg: num(els["f-nightldg"].value),
+      night: num(els["f-night"].value),
+      actualInstr: num(els["f-actual"].value),
+      simInstr: num(els["f-sim"].value),
+      approach: els["f-approach"].value.trim(),
+      xc: num(els["f-xc"].value),
+      solo: num(els["f-solo"].value),
+      pic: num(els["f-pic"].value),
+      stupic: num(els["f-stupic"].value),
+      dual: num(els["f-dual"].value),
+      cfi: num(els["f-cfi"].value),
+      remarks: els["f-remarks"].value.trim()
+    };
+  }
+  function fillForm(e){
+    setDateValue(e.date);
+    els["f-model"].value = e.model || "";
+    els["f-ident"].value = e.ident || "";
+    els["f-from"].value = e.from || "";
+    els["f-via"].value = e.via || "";
+    els["f-to"].value = e.to || "";
+    els["f-total"].value = e.total || "";
+    els["f-asel"].value = e.asel || "";
+    els["f-amel"].value = e.amel || "";
+    els["f-dayldg"].value = e.dayLdg || "";
+    els["f-nightldg"].value = e.nightLdg || "";
+    els["f-night"].value = e.night || "";
+    els["f-actual"].value = e.actualInstr || "";
+    els["f-sim"].value = e.simInstr || "";
+    els["f-approach"].value = e.approach || "";
+    els["f-xc"].value = e.xc || "";
+    els["f-solo"].value = e.solo || "";
+    els["f-pic"].value = e.pic || "";
+    els["f-stupic"].value = e.stupic || "";
+    els["f-dual"].value = e.dual || "";
+    els["f-cfi"].value = e.cfi || "";
+    els["f-remarks"].value = e.remarks || "";
+  }
+  function resetForm(){
+    entryForm.reset();
+    setDateValue(new Date().toISOString().slice(0,10));
+    editingId = null;
+    submitBtn.textContent = "Add Flight";
+    formTitle.textContent = "New Flight";
+    cancelEditBtn.hidden = true;
+    updateStupic();
+  }
+
+  entryForm.addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var data = readForm();
+    data.model = normalizeModel(data.model);
+    if (!data.date || !data.model){ return; }
+
+    if (editingId){
+      var idx = entries.findIndex(function(x){ return x.id === editingId; });
+      if (idx > -1){ data.id = editingId; entries[idx] = data; }
+    } else {
+      data.id = uid();
+      entries.push(data);
+    }
+    saveEntries();
+    renderEntries();
+    renderModelDatalist();
+    renderIdentDatalist();
+    resetForm();
+  });
+
+  cancelEditBtn.addEventListener("click", resetForm);
+
+  function editEntry(id){
+    var e = entries.find(function(x){ return x.id === id; });
+    if (!e) return;
+    fillForm(e);
+    editingId = id;
+    submitBtn.textContent = "Save Changes";
+    formTitle.textContent = "Edit Flight";
+    cancelEditBtn.hidden = false;
+    var logTab = document.getElementById("tab-log");
+    if (logTab && typeof logTab.scrollIntoView === "function") logTab.scrollIntoView({behavior:"smooth"});
+  }
+  function deleteEntry(id){
+    if (!confirm("Delete this flight entry? This can't be undone (unless you have a backup).")) return;
+    entries = entries.filter(function(x){ return x.id !== id; });
+    saveEntries();
+    renderEntries();
+    renderModelDatalist();
+    renderIdentDatalist();
+  }
+
+  // ---------- render: entries table ----------
+  function routeText(e){
+    var parts = [e.from, e.via, e.to].filter(Boolean);
+    return parts.join(" &rarr; ");
+  }
+  function esc(s){
+    var d = document.createElement("div");
+    d.textContent = (s === undefined || s === null) ? "" : String(s);
+    return d.innerHTML;
+  }
+  function sortedEntries(){
+    var arr = entries.slice();
+    arr.sort(function(a,b){
+      var av = a[sortKey], bv = b[sortKey];
+      if (sortKey === "date"){ av = av || ""; bv = bv || ""; }
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  }
+  function renderEntries(){
+    var arr = sortedEntries();
+    entryCountEl.textContent = arr.length ? (arr.length + " flight" + (arr.length===1?"":"s")) : "";
+    if (!arr.length){
+      entriesTbody.innerHTML = '<tr class="empty-row"><td colspan="21">No flights logged yet — add your first one above.</td></tr>';
+      return;
+    }
+    var html = arr.map(function(e){
+      return "<tr>" +
+        "<td>" + esc(e.date) + "</td>" +
+        "<td>" + esc(e.model) + "</td>" +
+        "<td>" + esc(e.ident) + "</td>" +
+        "<td>" + routeText(e) + "</td>" +
+        "<td class='num'>" + fmt1(e.total) + "</td>" +
+        "<td class='num'>" + fmt1(e.asel) + "</td>" +
+        "<td class='num'>" + fmt1(e.amel) + "</td>" +
+        "<td class='num'>" + fmt0(e.dayLdg) + "</td>" +
+        "<td class='num'>" + fmt0(e.nightLdg) + "</td>" +
+        "<td class='num'>" + fmt1(e.night) + "</td>" +
+        "<td class='num'>" + fmt1(e.actualInstr) + "</td>" +
+        "<td class='num'>" + fmt1(e.simInstr) + "</td>" +
+        "<td>" + esc(e.approach) + "</td>" +
+        "<td class='num'>" + fmt1(e.xc) + "</td>" +
+        "<td class='num'>" + fmt1(e.solo) + "</td>" +
+        "<td class='num'>" + fmt1(e.pic) + "</td>" +
+        "<td class='num'>" + fmt1(e.stupic) + "</td>" +
+        "<td class='num'>" + fmt1(e.dual) + "</td>" +
+        "<td class='num'>" + fmt1(e.cfi) + "</td>" +
+        "<td>" + esc(e.remarks) + "</td>" +
+        "<td><div class='row-actions'>" +
+          "<button class='ghost small' data-edit='" + e.id + "'>Edit</button>" +
+          "<button class='danger-outline small' data-del='" + e.id + "'>Del</button>" +
+        "</div></td>" +
+      "</tr>";
+    }).join("");
+    entriesTbody.innerHTML = html;
+
+    entriesTbody.querySelectorAll("[data-edit]").forEach(function(btn){
+      btn.addEventListener("click", function(){ editEntry(btn.dataset.edit); });
+    });
+    entriesTbody.querySelectorAll("[data-del]").forEach(function(btn){
+      btn.addEventListener("click", function(){ deleteEntry(btn.dataset.del); });
+    });
+  }
+
+  document.querySelectorAll("th.sortable").forEach(function(th){
+    th.addEventListener("click", function(){
+      var key = th.dataset.key;
+      if (sortKey === key){ sortDir = sortDir === "asc" ? "desc" : "asc"; }
+      else { sortKey = key; sortDir = "desc"; }
+      document.querySelectorAll(".sort-ind").forEach(function(s){ s.textContent = ""; });
+      th.querySelector(".sort-ind").textContent = sortDir === "asc" ? "\u25B2" : "\u25BC";
+      renderEntries();
+    });
+  });
+
+  function renderModelDatalist(){
+    var models = Array.from(new Set(entries.map(function(e){ return normalizeModel(e.model); }).filter(Boolean)));
+    models.sort();
+    modelOptions.innerHTML = models.map(function(m){ return "<option value='" + esc(m) + "'>"; }).join("");
+  }
+
+  var KNOWN_IDENTS = ["N64949","N48590","N5253C","N9004W","N52522","N291HW","N926JA","N61942",
+    "N1517E","N1688L","N9520Z","N604ND","N345FH","N422CB","N55296","N6185U"];
+
+  function renderIdentDatalist(){
+    var fromEntries = entries.map(function(e){ return (e.ident||"").trim().toUpperCase(); }).filter(Boolean);
+    var idents = Array.from(new Set(KNOWN_IDENTS.concat(fromEntries)));
+    idents.sort();
+    identOptions.innerHTML = idents.map(function(i){ return "<option value='" + esc(i) + "'>"; }).join("");
+  }
+
+  // ---------- render: summary ----------
+  function statCard(label, value, opts){
+    opts = opts || {};
+    var cls = "stat-card" + (opts.hero ? " hero" : "");
+    var valCls = "stat-value" + (opts.color ? " " + opts.color : "");
+    return "<div class='" + cls + "'>" +
+      "<div class='stat-label'>" + esc(label) + "</div>" +
+      "<div class='" + valCls + "'>" + value + "<span class='unit'>hrs</span></div>" +
+      (opts.sub ? "<div class='stat-sub'>" + esc(opts.sub) + "</div>" : "") +
+    "</div>";
+  }
+
+  function renderSummary(){
+    var res = aggregate();
+    var t = res.totals;
+    var airplaneTime = t.asel + t.amel;
+    var simTotal = t.simInstrAirplane + t.simInstrAATD;
+
+    var grand = document.getElementById("grand-stats");
+    grand.innerHTML =
+      statCard("Total Airplane Time (ASEL+AMEL)", fmt1(airplaneTime), {hero:true, sub:"Includes carried-forward totals"}) +
+      statCard("Total Duration Logged", fmt1(t.total), {sub:"Includes AATD sessions"}) +
+      statCard("Total PIC", fmt1(t.pic), {color:"amber", sub:"All PIC time, incl. instructing"}) +
+      statCard("PIC (excl. Dual Given)", fmt1(t.picExclCfi), {sub:"PIC time not also spent instructing"}) +
+      statCard("As Flight Instructor (Total)", fmt1(t.cfi), {color:"green"}) +
+      statCard("Dual Received (Student)", fmt1(t.dual)) +
+      statCard("STUPIC", fmt1(t.stupic), {sub:"Subset of PIC & Dual Received"}) +
+      statCard("Solo", fmt1(t.solo)) +
+      statCard("Cross Country", fmt1(t.xc)) +
+      statCard("Night", fmt1(t.night)) +
+      statCard("Landings (Day/Night)", fmt0(t.dayLdg) + " / " + fmt0(t.nightLdg));
+
+    var instr = document.getElementById("instr-breakdown");
+    instr.innerHTML =
+      "<div class='instr-box'><div class='k'>Actual Instrument</div><div class='v'>" + fmt1(t.actualInstr) + "</div></div>" +
+      "<div class='instr-box'><div class='k'>Simulated Instrument &mdash; Airplane</div><div class='v'>" + fmt1(t.simInstrAirplane) + "</div></div>" +
+      "<div class='instr-box'><div class='k'>Simulated Instrument &mdash; AATD</div><div class='v'>" + fmt1(t.simInstrAATD) + "</div></div>" +
+      "<div class='instr-box'><div class='k'>Simulated Instrument &mdash; Total</div><div class='v'>" + fmt1(simTotal) + "</div></div>";
+
+    var modelKeys = Object.keys(res.byModel).sort();
+    if (!modelKeys.length){
+      modelTbody.innerHTML = '<tr class="empty-row"><td colspan="12">No flights logged yet.</td></tr>';
+    } else {
+      modelTbody.innerHTML = modelKeys.map(function(k){
+        var m = res.byModel[k];
+        return "<tr>" +
+          "<td>" + esc(k) + "</td>" +
+          "<td class='num'>" + m.flights + "</td>" +
+          "<td class='num'>" + fmt1(m.airplaneTime) + "</td>" +
+          "<td class='num'>" + fmt1(m.pic) + "</td>" +
+          "<td class='num'>" + fmt1(m.stupic) + "</td>" +
+          "<td class='num'>" + fmt1(m.dual) + "</td>" +
+          "<td class='num'>" + fmt1(m.solo) + "</td>" +
+          "<td class='num'>" + fmt1(m.xc) + "</td>" +
+          "<td class='num'>" + fmt1(m.night) + "</td>" +
+          "<td class='num'>" + fmt1(m.actualInstr) + "</td>" +
+          "<td class='num'>" + fmt1(m.simInstr) + "</td>" +
+          "<td class='num'>" + fmt1(m.cfi) + "</td>" +
+        "</tr>";
+      }).join("");
+    }
+  }
+
+  // ---------- carried forward form ----------
+  function fillCFForm(){
+    els["cf-total"].value = carriedForward.total || 0;
+    els["cf-asel"].value = carriedForward.asel || 0;
+    els["cf-amel"].value = carriedForward.amel || 0;
+    els["cf-xc"].value = carriedForward.xc || 0;
+    els["cf-dayldg"].value = carriedForward.dayLdg || 0;
+    els["cf-nightldg"].value = carriedForward.nightLdg || 0;
+    els["cf-night"].value = carriedForward.night || 0;
+    els["cf-actual"].value = carriedForward.actualInstr || 0;
+    els["cf-simair"].value = carriedForward.simInstrAirplane || 0;
+    els["cf-simaatd"].value = carriedForward.simInstrAATD || 0;
+    els["cf-solo"].value = carriedForward.solo || 0;
+    els["cf-pic"].value = carriedForward.pic || 0;
+    els["cf-stupic"].value = carriedForward.stupic || 0;
+    els["cf-dual"].value = carriedForward.dual || 0;
+    els["cf-cfi"].value = carriedForward.cfi || 0;
+  }
+  cfForm.addEventListener("submit", function(ev){
+    ev.preventDefault();
+    carriedForward = {
+      total: num(els["cf-total"].value),
+      asel: num(els["cf-asel"].value),
+      amel: num(els["cf-amel"].value),
+      xc: num(els["cf-xc"].value),
+      dayLdg: num(els["cf-dayldg"].value),
+      nightLdg: num(els["cf-nightldg"].value),
+      night: num(els["cf-night"].value),
+      actualInstr: num(els["cf-actual"].value),
+      simInstrAirplane: num(els["cf-simair"].value),
+      simInstrAATD: num(els["cf-simaatd"].value),
+      solo: num(els["cf-solo"].value),
+      pic: num(els["cf-pic"].value),
+      stupic: num(els["cf-stupic"].value),
+      dual: num(els["cf-dual"].value),
+      cfi: num(els["cf-cfi"].value)
+    };
+    saveCF();
+    var msg = document.getElementById("cf-saved-msg");
+    msg.textContent = "Saved.";
+    setTimeout(function(){ msg.textContent = ""; }, 2500);
+    renderSummary();
+  });
+
+  // ---------- export / import ----------
+  function download(filename, content, mime){
+    var blob = new Blob([content], {type: mime});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+  document.getElementById("export-json").addEventListener("click", function(){
+    var payload = JSON.stringify({entries: entries, carriedForward: carriedForward, exportedAt: new Date().toISOString()}, null, 2);
+    download("pilot-log-backup-" + new Date().toISOString().slice(0,10) + ".json", payload, "application/json");
+  });
+  document.getElementById("export-csv").addEventListener("click", function(){
+    var headers = ["Date","Aircraft Make/Model","Aircraft Ident.","From","Via (Stops)","To","Total Duration",
+      "ASEL","AMEL","Day Ldg","Night Ldg","Night","Actual Instr","Sim Instr","Approach & Type",
+      "Cross Country","Solo","PIC","STUPIC","Dual Received","As CFI","Notes/Remarks"];
+    function csvField(v){
+      var s = (v === undefined || v === null) ? "" : String(v);
+      if (/[",\n]/.test(s)) s = '"' + s.replace(/"/g,'""') + '"';
+      return s;
+    }
+    var lines = [headers.map(csvField).join(",")];
+    sortedEntries().forEach(function(e){
+      lines.push([e.date,e.model,e.ident,e.from,e.via,e.to,e.total,e.asel,e.amel,e.dayLdg,e.nightLdg,
+        e.night,e.actualInstr,e.simInstr,e.approach,e.xc,e.solo,e.pic,e.stupic,e.dual,e.cfi,e.remarks
+      ].map(csvField).join(","));
+    });
+    download("pilot-log-" + new Date().toISOString().slice(0,10) + ".csv", lines.join("\n"), "text/csv");
+  });
+  document.getElementById("import-json").addEventListener("change", function(ev){
+    var file = ev.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var data = JSON.parse(reader.result);
+        if (!data || !Array.isArray(data.entries)) throw new Error("bad format");
+        if (!confirm("Restore from this backup? This will replace all current entries and carried-forward totals.")) return;
+        entries = data.entries;
+        carriedForward = Object.assign(emptyCF(), data.carriedForward || {});
+        saveEntries(); saveCF();
+        renderEntries(); renderModelDatalist(); renderIdentDatalist(); renderSummary(); fillCFForm();
+        alert("Backup restored: " + entries.length + " flights loaded.");
+      }catch(e){
+        alert("That file doesn't look like a valid Pilot Flight Log backup.");
+      }
+      ev.target.value = "";
+    };
+    reader.readAsText(file);
+  });
+  document.getElementById("reset-all").addEventListener("click", function(){
+    if (!confirm("Erase ALL flights and carried-forward totals? Download a backup first if you're not sure.")) return;
+    if (!confirm("This cannot be undone. Erase everything?")) return;
+    entries = [];
+    carriedForward = emptyCF();
+    saveEntries(); saveCF();
+    renderEntries(); renderModelDatalist(); renderIdentDatalist(); renderSummary(); fillCFForm();
+  });
+
+  // ---------- init ----------
+  populateDateSelects();
+  loadAll().then(function(){
+    resetForm();
+    renderEntries();
+    renderModelDatalist();
+    renderIdentDatalist();
+    renderSummary();
+    fillCFForm();
+    document.getElementById("storage-mode").textContent = hasClaudeStorage
+      ? "Storage: synced via Claude (persists across sessions on this artifact)."
+      : "Storage: saved in this browser only (localStorage). Back up regularly, especially before clearing browser data or switching devices/browsers.";
+  });
+})();
+</script>
+</body>
+</html>
