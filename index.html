@@ -412,16 +412,8 @@
 
     <div class="panel">
       <h2>Shared for All These Flights</h2>
-      <p class="hint">Set the stuff that's the same across the whole batch once. From/To default to KFRG like the regular form.</p>
-      <div class="row cols-4">
-        <div class="field">
-          <label for="b-model">Aircraft Make/Model</label>
-          <input type="text" id="b-model" list="model-options" placeholder="e.g. C172SP">
-        </div>
-        <div class="field">
-          <label for="b-ident">Aircraft Ident.</label>
-          <input type="text" id="b-ident" list="ident-options" placeholder="e.g. N12345">
-        </div>
+      <p class="hint">From/To default to KFRG like the regular form. Edit if a flight in this batch went somewhere else.</p>
+      <div class="row cols-2">
         <div class="field">
           <label for="b-from">From</label>
           <input type="text" id="b-from" value="KFRG">
@@ -433,24 +425,62 @@
       </div>
     </div>
 
+    <p class="hint" style="margin:0 0 12px;">Build each list below in order, one flight at a time. Click "Add" (or press Enter) repeatedly to add the same value again &mdash; there's no limit. Click any item in a list to edit it in place; its position number won't change.</p>
+
+    <div class="row cols-3">
+      <div class="panel">
+        <h2>Aircraft Models (in order)</h2>
+        <div class="form-actions" style="margin-top:0;">
+          <input type="text" id="b-model-input" list="model-options" placeholder="e.g. C172SP" style="flex:1;">
+          <button type="button" class="ghost small" id="b-model-add">Add</button>
+        </div>
+        <div id="b-model-list" style="margin-top:12px; display:flex; flex-direction:column; gap:6px;"></div>
+        <button type="button" class="ghost small" id="b-model-clear" style="margin-top:10px;">Clear All</button>
+      </div>
+
+      <div class="panel">
+        <h2>Tail Numbers (in order)</h2>
+        <div class="form-actions" style="margin-top:0;">
+          <input type="text" id="b-tail-input" list="ident-options" placeholder="e.g. N9520Z" style="flex:1;">
+          <button type="button" class="ghost small" id="b-tail-add">Add</button>
+        </div>
+        <div id="b-tail-list" style="margin-top:12px; display:flex; flex-direction:column; gap:6px;"></div>
+        <button type="button" class="ghost small" id="b-tail-clear" style="margin-top:10px;">Clear All</button>
+      </div>
+
+      <div class="panel">
+        <h2>Dates (in order)</h2>
+        <div class="date-select-row">
+          <select id="b-date-month" aria-label="Month"></select>
+          <select id="b-date-day" aria-label="Day"></select>
+          <select id="b-date-year" aria-label="Year"></select>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="ghost small" id="b-date-add">Add Date</button>
+        </div>
+        <div id="b-date-list" style="margin-top:12px; display:flex; flex-direction:column; gap:6px;"></div>
+        <button type="button" class="ghost small" id="b-date-clear" style="margin-top:10px;">Clear All</button>
+      </div>
+    </div>
+
     <div class="panel">
       <h2>Mirror Total Duration Into</h2>
       <p class="hint">For every flight in this batch, also set these fields equal to that flight's Total Duration. Leave unchecked for anything that doesn't apply — unchecked fields stay at 0, exactly like leaving them blank on the regular form.</p>
       <div class="row cols-5" style="align-items:center;">
         <label class="field" style="flex-direction:row; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--text);"><input type="checkbox" id="b-mirror-asel" style="width:auto;"> ASEL</label>
         <label class="field" style="flex-direction:row; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--text);"><input type="checkbox" id="b-mirror-amel" style="width:auto;"> AMEL</label>
-        <label class="field" style="flex-direction:row; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--text);"><input type="checkbox" id="b-mirror-pic" style="width:auto;"> PIC</label>
+        <label class="field" style="flex-direction:row; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--text);"><input type="checkbox" id="b-mirror-pic" style="width:auto;" checked> PIC</label>
         <label class="field" style="flex-direction:row; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--text);"><input type="checkbox" id="b-mirror-dual" style="width:auto;"> Dual Received</label>
-        <label class="field" style="flex-direction:row; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--text);"><input type="checkbox" id="b-mirror-cfi" style="width:auto;"> As CFI</label>
+        <label class="field" style="flex-direction:row; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--text);"><input type="checkbox" id="b-mirror-cfi" style="width:auto;" checked> As CFI</label>
       </div>
     </div>
 
     <div class="panel">
-      <h2>Flights</h2>
-      <p class="hint">One flight per line: <code>date, total duration</code>. Dates need a year (e.g. <code>9/8/2022</code>, not just <code>9/8</code>) so nothing gets guessed wrong. Example:<br><code>9/8/2022, 0.9<br>9/8/2022, 1.0<br>9/10/2022, 1.4</code></p>
-      <textarea id="b-lines" rows="8" style="width:100%; font-family:var(--font-mono); font-size:14px; padding:10px; background:var(--panel); border:1.5px solid var(--border); border-radius:6px; color:var(--text);" placeholder="9/8/2022, 0.9&#10;9/8/2022, 1.0&#10;9/10/2022, 1.4"></textarea>
+      <h2>Flight Durations</h2>
+      <p class="hint">One number per line, same order as the three lists above. All four (models, tail numbers, dates, durations) need to match in count before you can preview. Click directly into this box anytime to edit a number.</p>
+      <textarea id="b-lines" rows="8" style="width:100%; font-family:var(--font-mono); font-size:14px; padding:10px; background:var(--panel); border:1.5px solid var(--border); border-radius:6px; color:var(--text);" placeholder="0.9&#10;1.0&#10;1.4"></textarea>
       <div class="form-actions">
-        <button type="button" class="ghost" id="b-preview-btn">Preview</button>
+        <button type="button" class="ghost" id="b-preview-btn">Build Preview</button>
         <span id="b-preview-msg" style="font-size:13px; font-weight:600;"></span>
       </div>
       <div class="table-wrap" id="b-preview-wrap" style="margin-top:14px; display:none;">
@@ -611,16 +641,29 @@
 
   // ---------- date select (Month / Day / Year dropdowns) ----------
   var MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  var dateMonthEl, dateDayEl, dateYearEl;
 
   function daysInMonth(year, month){ return new Date(year, month, 0).getDate(); } // month is 1-12
 
-  function populateDateSelects(){
-    dateMonthEl = document.getElementById("f-date-month");
-    dateDayEl = document.getElementById("f-date-day");
-    dateYearEl = document.getElementById("f-date-year");
+  function makeDateSelectGroup(monthId, dayId, yearId){
+    var monthEl = document.getElementById(monthId);
+    var dayEl = document.getElementById(dayId);
+    var yearEl = document.getElementById(yearId);
 
-    dateMonthEl.innerHTML = MONTH_NAMES.map(function(name, i){
+    function updateDayOptions(){
+      var month = parseInt(monthEl.value, 10) || (new Date().getMonth()+1);
+      var year = parseInt(yearEl.value, 10) || new Date().getFullYear();
+      var maxDay = daysInMonth(year, month);
+      var prevSelected = parseInt(dayEl.value, 10) || 1;
+      var opts = [];
+      for (var d = 1; d <= maxDay; d++){ opts.push(d); }
+      dayEl.innerHTML = opts.map(function(d){
+        var dd = String(d).padStart(2,"0");
+        return "<option value='" + dd + "'>" + d + "</option>";
+      }).join("");
+      dayEl.value = String(Math.min(prevSelected, maxDay)).padStart(2,"0");
+    }
+
+    monthEl.innerHTML = MONTH_NAMES.map(function(name, i){
       var mm = String(i+1).padStart(2,"0");
       return "<option value='" + mm + "'>" + name + "</option>";
     }).join("");
@@ -629,39 +672,32 @@
     var minYear = thisYear - 15; // comfortably covers years well before 2022, stays current automatically
     var yearOpts = [];
     for (var y = thisYear; y >= minYear; y--){ yearOpts.push(y); }
-    dateYearEl.innerHTML = yearOpts.map(function(y){ return "<option value='" + y + "'>" + y + "</option>"; }).join("");
+    yearEl.innerHTML = yearOpts.map(function(y){ return "<option value='" + y + "'>" + y + "</option>"; }).join("");
 
     updateDayOptions();
-    dateMonthEl.addEventListener("change", function(){ updateDayOptions(); });
-    dateYearEl.addEventListener("change", function(){ updateDayOptions(); });
+    monthEl.addEventListener("change", updateDayOptions);
+    yearEl.addEventListener("change", updateDayOptions);
+
+    return {
+      getValue: function(){ return yearEl.value + "-" + monthEl.value + "-" + dayEl.value; },
+      setValue: function(iso){
+        if (!iso) iso = new Date().toISOString().slice(0,10);
+        var parts = iso.split("-");
+        yearEl.value = parts[0];
+        monthEl.value = parts[1];
+        updateDayOptions();
+        dayEl.value = parts[2];
+      }
+    };
   }
 
-  function updateDayOptions(){
-    var month = parseInt(dateMonthEl.value, 10) || (new Date().getMonth()+1);
-    var year = parseInt(dateYearEl.value, 10) || new Date().getFullYear();
-    var maxDay = daysInMonth(year, month);
-    var prevSelected = parseInt(dateDayEl.value, 10) || 1;
-    var opts = [];
-    for (var d = 1; d <= maxDay; d++){ opts.push(d); }
-    dateDayEl.innerHTML = opts.map(function(d){
-      var dd = String(d).padStart(2,"0");
-      return "<option value='" + dd + "'>" + d + "</option>";
-    }).join("");
-    dateDayEl.value = String(Math.min(prevSelected, maxDay)).padStart(2,"0");
+  var mainDateGroup, bulkDateGroup;
+  function populateDateSelects(){
+    mainDateGroup = makeDateSelectGroup("f-date-month", "f-date-day", "f-date-year");
+    bulkDateGroup = makeDateSelectGroup("b-date-month", "b-date-day", "b-date-year");
   }
-
-  function getDateValue(){
-    return dateYearEl.value + "-" + dateMonthEl.value + "-" + dateDayEl.value;
-  }
-  function setDateValue(iso){
-    if (!iso) iso = new Date().toISOString().slice(0,10);
-    var parts = iso.split("-");
-    var year = parts[0], month = parts[1], day = parts[2];
-    dateYearEl.value = year;
-    dateMonthEl.value = month;
-    updateDayOptions();
-    dateDayEl.value = day;
-  }
+  function getDateValue(){ return mainDateGroup.getValue(); }
+  function setDateValue(iso){ mainDateGroup.setValue(iso); }
 
   // ---------- aggregation (verified separately) ----------
   function emptyTotals(){
@@ -1136,8 +1172,6 @@
   });
 
   // ---------- bulk add ----------
-  var bModel = document.getElementById("b-model");
-  var bIdent = document.getElementById("b-ident");
   var bFrom = document.getElementById("b-from");
   var bTo = document.getElementById("b-to");
   var bLines = document.getElementById("b-lines");
@@ -1147,24 +1181,112 @@
   var bPreviewTbody = document.getElementById("b-preview-tbody");
   var bCommitRow = document.getElementById("b-commit-row");
   var bCommitBtn = document.getElementById("b-commit-btn");
-  var bulkParsed = []; // last successfully-parsed, error-free batch ready to commit
+  var bulkParsed = []; // last successfully-built, error-free batch ready to commit
 
-  function parseBulkDate(raw){
-    var s = (raw || "").trim();
-    var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
-    if (!m) return null; // no match = missing/invalid year, or bad format entirely
-    var month = parseInt(m[1], 10), day = parseInt(m[2], 10), year = parseInt(m[3], 10);
-    if (m[3].length === 2) year += 2000;
-    if (month < 1 || month > 12) return null;
-    var maxDay = daysInMonth(year, month);
-    if (day < 1 || day > maxDay) return null;
-    return year + "-" + String(month).padStart(2,"0") + "-" + String(day).padStart(2,"0");
+  // Reusable ordered list builder: add repeatedly (unlimited duplicates), click any
+  // item to edit it in place (position number stays put), remove, or clear all.
+  function makeOrderedPicker(cfg){
+    // cfg: {listEl, addBtn, clearBtn, getInputValue, setInputValue, addBtnDefaultLabel}
+    var items = [];
+    var editingIndex = null;
+
+    function render(){
+      cfg.listEl.innerHTML = items.map(function(v, i){
+        var editing = i === editingIndex;
+        return "<div style='display:flex; align-items:center; gap:8px; font-size:13.5px;" +
+          (editing ? " background:var(--cyan-dim); border-radius:6px; padding:3px 6px; margin:-3px -6px;" : "") + "'>" +
+          "<span style='color:var(--muted); font-family:var(--font-mono); min-width:20px;'>" + (i+1) + ".</span>" +
+          "<button type='button' data-edit-idx='" + i + "' style='background:none; border:none; padding:0; font-weight:600; font-family:var(--font-mono); color:var(--text); cursor:pointer; text-align:left;'>" + esc(v) + "</button>" +
+          "<button type='button' class='ghost small' data-remove-idx='" + i + "' style='margin-left:auto; padding:2px 8px;'>&times;</button>" +
+        "</div>";
+      }).join("");
+      cfg.listEl.querySelectorAll("[data-remove-idx]").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          var i = parseInt(btn.dataset.removeIdx, 10);
+          items.splice(i, 1);
+          if (editingIndex === i) stopEditing();
+          else if (editingIndex !== null && i < editingIndex) editingIndex--;
+          render();
+        });
+      });
+      cfg.listEl.querySelectorAll("[data-edit-idx]").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          var i = parseInt(btn.dataset.editIdx, 10);
+          editingIndex = i;
+          cfg.setInputValue(items[i]);
+          cfg.addBtn.textContent = "Update #" + (i+1);
+          render();
+        });
+      });
+    }
+    function stopEditing(){
+      editingIndex = null;
+      cfg.addBtn.textContent = cfg.addBtnDefaultLabel;
+    }
+    function addOrUpdate(){
+      var v = cfg.getInputValue();
+      if (!v) return;
+      if (editingIndex !== null){
+        items[editingIndex] = v;
+        stopEditing();
+      } else {
+        items.push(v);
+      }
+      render();
+    }
+    cfg.addBtn.addEventListener("click", addOrUpdate);
+    cfg.clearBtn.addEventListener("click", function(){
+      if (items.length && !confirm("Clear this whole list?")) return;
+      items = [];
+      stopEditing();
+      render();
+    });
+    return {
+      addOrUpdate: addOrUpdate,
+      getAll: function(){ return items; },
+      reset: function(){ items = []; stopEditing(); render(); }
+    };
   }
 
-  function parseBulkLines(){
-    var rawLines = bLines.value.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
-    var model = normalizeModel(bModel.value);
-    var ident = bIdent.value.trim().toUpperCase();
+  var bModelInput = document.getElementById("b-model-input");
+  var modelPicker = makeOrderedPicker({
+    listEl: document.getElementById("b-model-list"),
+    addBtn: document.getElementById("b-model-add"),
+    clearBtn: document.getElementById("b-model-clear"),
+    getInputValue: function(){ return normalizeModel(bModelInput.value); },
+    setInputValue: function(v){ bModelInput.value = v; },
+    addBtnDefaultLabel: "Add"
+  });
+  bModelInput.addEventListener("keydown", function(ev){
+    if (ev.key === "Enter"){ ev.preventDefault(); modelPicker.addOrUpdate(); bModelInput.select(); }
+  });
+
+  var bTailInput = document.getElementById("b-tail-input");
+  var tailPicker = makeOrderedPicker({
+    listEl: document.getElementById("b-tail-list"),
+    addBtn: document.getElementById("b-tail-add"),
+    clearBtn: document.getElementById("b-tail-clear"),
+    getInputValue: function(){ return bTailInput.value.trim().toUpperCase(); },
+    setInputValue: function(v){ bTailInput.value = v; },
+    addBtnDefaultLabel: "Add"
+  });
+  bTailInput.addEventListener("keydown", function(ev){
+    if (ev.key === "Enter"){ ev.preventDefault(); tailPicker.addOrUpdate(); bTailInput.select(); }
+  });
+
+  var datePicker = makeOrderedPicker({
+    listEl: document.getElementById("b-date-list"),
+    addBtn: document.getElementById("b-date-add"),
+    clearBtn: document.getElementById("b-date-clear"),
+    getInputValue: function(){ return bulkDateGroup.getValue(); },
+    setInputValue: function(v){ bulkDateGroup.setValue(v); },
+    addBtnDefaultLabel: "Add Date"
+  });
+
+  function renderBulkPreview(){
+    var models = modelPicker.getAll();
+    var tails = tailPicker.getAll();
+    var dates = datePicker.getAll();
     var from = bFrom.value.trim().toUpperCase();
     var to = bTo.value.trim().toUpperCase();
     var mirrorAsel = document.getElementById("b-mirror-asel").checked;
@@ -1173,35 +1295,10 @@
     var mirrorDual = document.getElementById("b-mirror-dual").checked;
     var mirrorCfi = document.getElementById("b-mirror-cfi").checked;
 
-    var results = rawLines.map(function(line, i){
-      var parts = line.split(",");
-      var dateRaw = (parts[0] || "").trim();
-      var totalRaw = (parts[1] || "").trim();
-      var date = parseBulkDate(dateRaw);
-      var total = parseFloat(totalRaw);
-      var errors = [];
-      if (!model) errors.push("Aircraft Make/Model is required (set it above)");
-      if (!date) errors.push("date needs a full year, like 9/8/2022");
-      if (isNaN(total) || total <= 0) errors.push("total duration must be a positive number");
-      if (parts.length < 2) errors.push("expected \"date, total duration\"");
-      return {
-        lineNum: i + 1, raw: line, date: date, dateRaw: dateRaw, total: isNaN(total) ? 0 : total,
-        model: model, ident: ident, from: from, to: to,
-        asel: mirrorAsel ? total : 0, amel: mirrorAmel ? total : 0,
-        pic: mirrorPic ? total : 0, dual: mirrorDual ? total : 0, cfi: mirrorCfi ? total : 0,
-        errors: errors
-      };
-    });
-    return results;
-  }
+    var durationLines = bLines.value.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
 
-  function renderBulkPreview(){
-    var parsed = parseBulkLines();
-    var errorLines = parsed.filter(function(p){ return p.errors.length; });
-    var okLines = parsed.filter(function(p){ return !p.errors.length; });
-
-    if (!parsed.length){
-      bPreviewMsg.textContent = "Paste at least one line first.";
+    if (!models.length && !tails.length && !dates.length && !durationLines.length){
+      bPreviewMsg.textContent = "Build the models, tail numbers, dates, and durations lists first.";
       bPreviewMsg.style.color = "var(--muted)";
       bPreviewWrap.style.display = "none";
       bCommitRow.style.display = "none";
@@ -1209,38 +1306,62 @@
       return;
     }
 
-    var sumTotal = okLines.reduce(function(s,p){ return s + p.total; }, 0);
-    bPreviewWrap.style.display = "block";
+    var n = durationLines.length;
+    if (models.length !== n || tails.length !== n || dates.length !== n){
+      bPreviewMsg.textContent = "Counts don't match \u2014 " + models.length + " model(s), " + tails.length +
+        " tail number(s), " + dates.length + " date(s), " + n + " duration(s). All four need to be the same count.";
+      bPreviewMsg.style.color = "var(--red)";
+      bPreviewWrap.style.display = "none";
+      bCommitRow.style.display = "none";
+      bulkParsed = [];
+      return;
+    }
 
-    bPreviewTbody.innerHTML = parsed.map(function(p){
-      if (p.errors.length){
-        return "<tr><td colspan='10' style='color:var(--red); font-weight:600;'>Line " + p.lineNum +
-          " (\"" + esc(p.raw) + "\") &mdash; " + esc(p.errors.join("; ")) + "</td></tr>";
+    var rows = durationLines.map(function(raw, i){
+      var total = parseFloat(raw);
+      var errors = [];
+      if (isNaN(total) || total <= 0) errors.push("\"" + raw + "\" isn't a positive number");
+      return {
+        rowNum: i + 1, date: dates[i], model: models[i], ident: tails[i], from: from, to: to,
+        total: isNaN(total) ? 0 : total,
+        asel: mirrorAsel ? total : 0, amel: mirrorAmel ? total : 0,
+        pic: mirrorPic ? total : 0, dual: mirrorDual ? total : 0, cfi: mirrorCfi ? total : 0,
+        errors: errors
+      };
+    });
+    var errorRows = rows.filter(function(r){ return r.errors.length; });
+    var okRows = rows.filter(function(r){ return !r.errors.length; });
+    var sumTotal = okRows.reduce(function(s,r){ return s + r.total; }, 0);
+
+    bPreviewWrap.style.display = "block";
+    bPreviewTbody.innerHTML = rows.map(function(r){
+      if (r.errors.length){
+        return "<tr><td colspan='10' style='color:var(--red); font-weight:600;'>Row " + r.rowNum + " \u2014 " + esc(r.errors.join("; ")) + "</td></tr>";
       }
       return "<tr>" +
-        "<td>" + esc(p.date) + "</td>" +
-        "<td>" + esc(p.model) + "</td>" +
-        "<td>" + esc(p.ident) + "</td>" +
-        "<td>" + esc([p.from,p.to].filter(Boolean).join(" \u2192 ")) + "</td>" +
-        "<td class='num'>" + fmt1(p.total) + "</td>" +
-        "<td class='num'>" + fmt1(p.asel) + "</td>" +
-        "<td class='num'>" + fmt1(p.amel) + "</td>" +
-        "<td class='num'>" + fmt1(p.pic) + "</td>" +
-        "<td class='num'>" + fmt1(p.dual) + "</td>" +
-        "<td class='num'>" + fmt1(p.cfi) + "</td>" +
+        "<td>" + esc(r.date) + "</td>" +
+        "<td>" + esc(r.model) + "</td>" +
+        "<td>" + esc(r.ident) + "</td>" +
+        "<td>" + esc([r.from,r.to].filter(Boolean).join(" \u2192 ")) + "</td>" +
+        "<td class='num'>" + fmt1(r.total) + "</td>" +
+        "<td class='num'>" + fmt1(r.asel) + "</td>" +
+        "<td class='num'>" + fmt1(r.amel) + "</td>" +
+        "<td class='num'>" + fmt1(r.pic) + "</td>" +
+        "<td class='num'>" + fmt1(r.dual) + "</td>" +
+        "<td class='num'>" + fmt1(r.cfi) + "</td>" +
       "</tr>";
     }).join("");
 
-    if (errorLines.length){
-      bPreviewMsg.textContent = errorLines.length + " line(s) have a problem \u2014 fix them above and preview again. Nothing will be added until every line is clean.";
+    if (errorRows.length){
+      bPreviewMsg.textContent = errorRows.length + " row(s) have a problem \u2014 fix them and preview again. Nothing will be added yet.";
       bPreviewMsg.style.color = "var(--red)";
       bCommitRow.style.display = "none";
       bulkParsed = [];
     } else {
-      bPreviewMsg.textContent = okLines.length + " flight(s) ready, totaling " + fmt1(sumTotal) + " hrs.";
+      bPreviewMsg.textContent = okRows.length + " flight(s) ready, totaling " + fmt1(sumTotal) + " hrs.";
       bPreviewMsg.style.color = "var(--green)";
       bCommitRow.style.display = "flex";
-      bulkParsed = okLines;
+      bulkParsed = okRows;
     }
   }
 
@@ -1263,6 +1384,9 @@
     renderIdentDatalist();
     renderSummary();
     bLines.value = "";
+    modelPicker.reset();
+    tailPicker.reset();
+    datePicker.reset();
     bPreviewWrap.style.display = "none";
     bCommitRow.style.display = "none";
     bulkParsed = [];
