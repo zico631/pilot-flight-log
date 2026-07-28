@@ -903,9 +903,10 @@
     opts = opts || {};
     var cls = "stat-card" + (opts.hero ? " hero" : "");
     var valCls = "stat-value" + (opts.color ? " " + opts.color : "");
+    var unit = opts.noUnit ? "" : "<span class='unit'>hrs</span>";
     return "<div class='" + cls + "'>" +
       "<div class='stat-label'>" + esc(label) + "</div>" +
-      "<div class='" + valCls + "'>" + value + "<span class='unit'>hrs</span></div>" +
+      "<div class='" + valCls + "'>" + value + unit + "</div>" +
       (opts.sub ? "<div class='stat-sub'>" + esc(opts.sub) + "</div>" : "") +
     "</div>";
   }
@@ -928,7 +929,11 @@
       statCard("Solo", fmt1(t.solo)) +
       statCard("Cross Country", fmt1(t.xc)) +
       statCard("Night", fmt1(t.night)) +
-      statCard("Landings (Day/Night)", fmt0(t.dayLdg) + " / " + fmt0(t.nightLdg));
+      statCard("Landings (Day/Night)",
+        "<span style='color:var(--green);'>" + fmt0(t.dayLdg) + "</span>" +
+        "<span style='color:var(--muted); font-weight:500;'> / </span>" +
+        "<span style='color:var(--text);'>" + fmt0(t.nightLdg) + "</span>",
+        {noUnit:true, sub:"Day / Night"});
 
     var instr = document.getElementById("instr-breakdown");
     instr.innerHTML =
