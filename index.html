@@ -206,6 +206,7 @@
   </div>
   <nav class="tabs">
     <button class="tab-btn active" data-tab="log">Log Entries</button>
+    <button class="tab-btn" data-tab="bulk">Bulk Add</button>
     <button class="tab-btn" data-tab="summary">Summary</button>
     <button class="tab-btn" data-tab="settings">Carried Forward &amp; Backup</button>
   </nav>
@@ -402,6 +403,70 @@
           </thead>
           <tbody id="entries-tbody"></tbody>
         </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BULK ADD TAB ============ -->
+  <section id="tab-bulk" class="tab-panel">
+
+    <div class="panel">
+      <h2>Shared for All These Flights</h2>
+      <p class="hint">Set the stuff that's the same across the whole batch once. From/To default to KFRG like the regular form.</p>
+      <div class="row cols-4">
+        <div class="field">
+          <label for="b-model">Aircraft Make/Model</label>
+          <input type="text" id="b-model" list="model-options" placeholder="e.g. C172SP">
+        </div>
+        <div class="field">
+          <label for="b-ident">Aircraft Ident.</label>
+          <input type="text" id="b-ident" list="ident-options" placeholder="e.g. N12345">
+        </div>
+        <div class="field">
+          <label for="b-from">From</label>
+          <input type="text" id="b-from" value="KFRG">
+        </div>
+        <div class="field">
+          <label for="b-to">To</label>
+          <input type="text" id="b-to" value="KFRG">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Mirror Total Duration Into</h2>
+      <p class="hint">For every flight in this batch, also set these fields equal to that flight's Total Duration. Leave unchecked for anything that doesn't apply — unchecked fields stay at 0, exactly like leaving them blank on the regular form.</p>
+      <div class="row cols-5" style="align-items:center;">
+        <label class="field" style="flex-direction:row; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--text);"><input type="checkbox" id="b-mirror-asel" style="width:auto;"> ASEL</label>
+        <label class="field" style="flex-direction:row; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--text);"><input type="checkbox" id="b-mirror-amel" style="width:auto;"> AMEL</label>
+        <label class="field" style="flex-direction:row; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--text);"><input type="checkbox" id="b-mirror-pic" style="width:auto;"> PIC</label>
+        <label class="field" style="flex-direction:row; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--text);"><input type="checkbox" id="b-mirror-dual" style="width:auto;"> Dual Received</label>
+        <label class="field" style="flex-direction:row; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--text);"><input type="checkbox" id="b-mirror-cfi" style="width:auto;"> As CFI</label>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Flights</h2>
+      <p class="hint">One flight per line: <code>date, total duration</code>. Dates need a year (e.g. <code>9/8/2022</code>, not just <code>9/8</code>) so nothing gets guessed wrong. Example:<br><code>9/8/2022, 0.9<br>9/8/2022, 1.0<br>9/10/2022, 1.4</code></p>
+      <textarea id="b-lines" rows="8" style="width:100%; font-family:var(--font-mono); font-size:14px; padding:10px; background:var(--panel); border:1.5px solid var(--border); border-radius:6px; color:var(--text);" placeholder="9/8/2022, 0.9&#10;9/8/2022, 1.0&#10;9/10/2022, 1.4"></textarea>
+      <div class="form-actions">
+        <button type="button" class="ghost" id="b-preview-btn">Preview</button>
+        <span id="b-preview-msg" style="font-size:13px; font-weight:600;"></span>
+      </div>
+      <div class="table-wrap" id="b-preview-wrap" style="margin-top:14px; display:none;">
+        <table id="b-preview-table">
+          <thead>
+            <tr>
+              <th>Date</th><th>Model</th><th>Ident</th><th>Route</th>
+              <th class="num">Total</th><th class="num">ASEL</th><th class="num">AMEL</th>
+              <th class="num">PIC</th><th class="num">Dual</th><th class="num">As CFI</th>
+            </tr>
+          </thead>
+          <tbody id="b-preview-tbody"></tbody>
+        </table>
+      </div>
+      <div class="form-actions" id="b-commit-row" style="display:none; margin-top:14px;">
+        <button type="button" class="primary" id="b-commit-btn">Add These Flights to My Logbook</button>
       </div>
     </div>
   </section>
@@ -1068,6 +1133,141 @@
     carriedForward = emptyCF();
     saveEntries(); saveCF();
     renderEntries(); renderModelDatalist(); renderIdentDatalist(); renderSummary(); fillCFForm();
+  });
+
+  // ---------- bulk add ----------
+  var bModel = document.getElementById("b-model");
+  var bIdent = document.getElementById("b-ident");
+  var bFrom = document.getElementById("b-from");
+  var bTo = document.getElementById("b-to");
+  var bLines = document.getElementById("b-lines");
+  var bPreviewBtn = document.getElementById("b-preview-btn");
+  var bPreviewMsg = document.getElementById("b-preview-msg");
+  var bPreviewWrap = document.getElementById("b-preview-wrap");
+  var bPreviewTbody = document.getElementById("b-preview-tbody");
+  var bCommitRow = document.getElementById("b-commit-row");
+  var bCommitBtn = document.getElementById("b-commit-btn");
+  var bulkParsed = []; // last successfully-parsed, error-free batch ready to commit
+
+  function parseBulkDate(raw){
+    var s = (raw || "").trim();
+    var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+    if (!m) return null; // no match = missing/invalid year, or bad format entirely
+    var month = parseInt(m[1], 10), day = parseInt(m[2], 10), year = parseInt(m[3], 10);
+    if (m[3].length === 2) year += 2000;
+    if (month < 1 || month > 12) return null;
+    var maxDay = daysInMonth(year, month);
+    if (day < 1 || day > maxDay) return null;
+    return year + "-" + String(month).padStart(2,"0") + "-" + String(day).padStart(2,"0");
+  }
+
+  function parseBulkLines(){
+    var rawLines = bLines.value.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
+    var model = normalizeModel(bModel.value);
+    var ident = bIdent.value.trim().toUpperCase();
+    var from = bFrom.value.trim().toUpperCase();
+    var to = bTo.value.trim().toUpperCase();
+    var mirrorAsel = document.getElementById("b-mirror-asel").checked;
+    var mirrorAmel = document.getElementById("b-mirror-amel").checked;
+    var mirrorPic = document.getElementById("b-mirror-pic").checked;
+    var mirrorDual = document.getElementById("b-mirror-dual").checked;
+    var mirrorCfi = document.getElementById("b-mirror-cfi").checked;
+
+    var results = rawLines.map(function(line, i){
+      var parts = line.split(",");
+      var dateRaw = (parts[0] || "").trim();
+      var totalRaw = (parts[1] || "").trim();
+      var date = parseBulkDate(dateRaw);
+      var total = parseFloat(totalRaw);
+      var errors = [];
+      if (!model) errors.push("Aircraft Make/Model is required (set it above)");
+      if (!date) errors.push("date needs a full year, like 9/8/2022");
+      if (isNaN(total) || total <= 0) errors.push("total duration must be a positive number");
+      if (parts.length < 2) errors.push("expected \"date, total duration\"");
+      return {
+        lineNum: i + 1, raw: line, date: date, dateRaw: dateRaw, total: isNaN(total) ? 0 : total,
+        model: model, ident: ident, from: from, to: to,
+        asel: mirrorAsel ? total : 0, amel: mirrorAmel ? total : 0,
+        pic: mirrorPic ? total : 0, dual: mirrorDual ? total : 0, cfi: mirrorCfi ? total : 0,
+        errors: errors
+      };
+    });
+    return results;
+  }
+
+  function renderBulkPreview(){
+    var parsed = parseBulkLines();
+    var errorLines = parsed.filter(function(p){ return p.errors.length; });
+    var okLines = parsed.filter(function(p){ return !p.errors.length; });
+
+    if (!parsed.length){
+      bPreviewMsg.textContent = "Paste at least one line first.";
+      bPreviewMsg.style.color = "var(--muted)";
+      bPreviewWrap.style.display = "none";
+      bCommitRow.style.display = "none";
+      bulkParsed = [];
+      return;
+    }
+
+    var sumTotal = okLines.reduce(function(s,p){ return s + p.total; }, 0);
+    bPreviewWrap.style.display = "block";
+
+    bPreviewTbody.innerHTML = parsed.map(function(p){
+      if (p.errors.length){
+        return "<tr><td colspan='10' style='color:var(--red); font-weight:600;'>Line " + p.lineNum +
+          " (\"" + esc(p.raw) + "\") &mdash; " + esc(p.errors.join("; ")) + "</td></tr>";
+      }
+      return "<tr>" +
+        "<td>" + esc(p.date) + "</td>" +
+        "<td>" + esc(p.model) + "</td>" +
+        "<td>" + esc(p.ident) + "</td>" +
+        "<td>" + esc([p.from,p.to].filter(Boolean).join(" \u2192 ")) + "</td>" +
+        "<td class='num'>" + fmt1(p.total) + "</td>" +
+        "<td class='num'>" + fmt1(p.asel) + "</td>" +
+        "<td class='num'>" + fmt1(p.amel) + "</td>" +
+        "<td class='num'>" + fmt1(p.pic) + "</td>" +
+        "<td class='num'>" + fmt1(p.dual) + "</td>" +
+        "<td class='num'>" + fmt1(p.cfi) + "</td>" +
+      "</tr>";
+    }).join("");
+
+    if (errorLines.length){
+      bPreviewMsg.textContent = errorLines.length + " line(s) have a problem \u2014 fix them above and preview again. Nothing will be added until every line is clean.";
+      bPreviewMsg.style.color = "var(--red)";
+      bCommitRow.style.display = "none";
+      bulkParsed = [];
+    } else {
+      bPreviewMsg.textContent = okLines.length + " flight(s) ready, totaling " + fmt1(sumTotal) + " hrs.";
+      bPreviewMsg.style.color = "var(--green)";
+      bCommitRow.style.display = "flex";
+      bulkParsed = okLines;
+    }
+  }
+
+  bPreviewBtn.addEventListener("click", renderBulkPreview);
+
+  bCommitBtn.addEventListener("click", function(){
+    if (!bulkParsed.length) return;
+    if (!confirm("Add " + bulkParsed.length + " flight(s) to your logbook? This adds to your existing entries \u2014 nothing gets replaced.")) return;
+    bulkParsed.forEach(function(p){
+      entries.push({
+        id: uid(), date: p.date, model: p.model, ident: p.ident, from: p.from, via: "", to: p.to,
+        total: p.total, asel: p.asel, amel: p.amel, dayLdg: 0, nightLdg: 0, night: 0,
+        actualInstr: 0, simInstr: 0, approach: "", xc: 0, solo: 0,
+        pic: p.pic, stupic: Math.min(p.pic, p.dual), dual: p.dual, cfi: p.cfi, remarks: ""
+      });
+    });
+    saveEntries();
+    renderEntries();
+    renderModelDatalist();
+    renderIdentDatalist();
+    renderSummary();
+    bLines.value = "";
+    bPreviewWrap.style.display = "none";
+    bCommitRow.style.display = "none";
+    bulkParsed = [];
+    bPreviewMsg.textContent = "Added! Check the Log Entries tab.";
+    bPreviewMsg.style.color = "var(--green)";
   });
 
   // ---------- init ----------
