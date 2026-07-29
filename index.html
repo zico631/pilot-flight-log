@@ -427,7 +427,7 @@
 
     <p class="hint" style="margin:0 0 12px;">Build each list below in order, one flight at a time. Click "Add" (or press Enter) repeatedly to add the same value again &mdash; there's no limit. Click any item in a list to edit it in place; its position number won't change.</p>
 
-    <div class="row cols-3">
+    <div class="row cols-2">
       <div class="panel">
         <h2>Aircraft Models (in order)</h2>
         <div class="form-actions" style="margin-top:0;">
@@ -440,14 +440,18 @@
 
       <div class="panel">
         <h2>Tail Numbers (in order)</h2>
+        <p class="hint" style="margin-bottom:10px;">Click a tail number to add it to your list. Click again for the same one — no limit. Editing an existing item? Click it in the list below first, then click its replacement here.</p>
+        <div id="b-tail-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:10px;"></div>
         <div class="form-actions" style="margin-top:0;">
-          <input type="text" id="b-tail-input" list="ident-options" placeholder="e.g. N9520Z" style="flex:1;">
+          <input type="text" id="b-tail-input" placeholder="New tail number" style="flex:1;">
           <button type="button" class="ghost small" id="b-tail-add">Add</button>
         </div>
         <div id="b-tail-list" style="margin-top:12px; display:flex; flex-direction:column; gap:6px;"></div>
         <button type="button" class="ghost small" id="b-tail-clear" style="margin-top:10px;">Clear All</button>
       </div>
+    </div>
 
+    <div class="row cols-2">
       <div class="panel">
         <h2>Dates (in order)</h2>
         <div class="date-select-row">
@@ -460,6 +464,12 @@
         </div>
         <div id="b-date-list" style="margin-top:12px; display:flex; flex-direction:column; gap:6px;"></div>
         <button type="button" class="ghost small" id="b-date-clear" style="margin-top:10px;">Clear All</button>
+      </div>
+
+      <div class="panel">
+        <h2>From / Stops / To</h2>
+        <p class="hint" style="margin-bottom:10px;">Fills in automatically (From/To from the defaults above, Stops blank) as you add tail numbers. Edit any field directly if one particular flight needs a stop or a different route.</p>
+        <div id="b-route-list" style="display:flex; flex-direction:column; gap:6px;"></div>
       </div>
     </div>
 
@@ -881,6 +891,7 @@
     renderEntries();
     renderModelDatalist();
     renderIdentDatalist();
+    renderTailGrid();
     resetForm();
   });
 
@@ -904,6 +915,7 @@
     renderEntries();
     renderModelDatalist();
     renderIdentDatalist();
+    renderTailGrid();
   }
 
   // ---------- render: entries table ----------
@@ -1153,7 +1165,7 @@
         entries = data.entries;
         carriedForward = Object.assign(emptyCF(), data.carriedForward || {});
         saveEntries(); saveCF();
-        renderEntries(); renderModelDatalist(); renderIdentDatalist(); renderSummary(); fillCFForm();
+        renderEntries(); renderModelDatalist(); renderIdentDatalist(); renderTailGrid(); renderSummary(); fillCFForm();
         alert("Backup restored: " + entries.length + " flights loaded.");
       }catch(e){
         alert("That file doesn't look like a valid Pilot Flight Log backup.");
@@ -1168,7 +1180,7 @@
     entries = [];
     carriedForward = emptyCF();
     saveEntries(); saveCF();
-    renderEntries(); renderModelDatalist(); renderIdentDatalist(); renderSummary(); fillCFForm();
+    renderEntries(); renderModelDatalist(); renderIdentDatalist(); renderTailGrid(); renderSummary(); fillCFForm();
   });
 
   // ---------- bulk add ----------
@@ -1186,7 +1198,7 @@
   // Reusable ordered list builder: add repeatedly (unlimited duplicates), click any
   // item to edit it in place (position number stays put), remove, or clear all.
   function makeOrderedPicker(cfg){
-    // cfg: {listEl, addBtn, clearBtn, getInputValue, setInputValue, addBtnDefaultLabel}
+    // cfg: {listEl, addBtn, clearBtn, getInputValue, setInputValue, addBtnDefaultLabel, onChange}
     var items = [];
     var editingIndex = null;
 
@@ -1218,13 +1230,13 @@
           render();
         });
       });
+      if (cfg.onChange) cfg.onChange(items.slice());
     }
     function stopEditing(){
       editingIndex = null;
       cfg.addBtn.textContent = cfg.addBtnDefaultLabel;
     }
-    function addOrUpdate(){
-      var v = cfg.getInputValue();
+    function addValue(v){
       if (!v) return;
       if (editingIndex !== null){
         items[editingIndex] = v;
@@ -1233,6 +1245,9 @@
         items.push(v);
       }
       render();
+    }
+    function addOrUpdate(){
+      addValue(cfg.getInputValue());
     }
     cfg.addBtn.addEventListener("click", addOrUpdate);
     cfg.clearBtn.addEventListener("click", function(){
@@ -1243,6 +1258,7 @@
     });
     return {
       addOrUpdate: addOrUpdate,
+      addValue: addValue,
       getAll: function(){ return items; },
       reset: function(){ items = []; stopEditing(); render(); }
     };
@@ -1262,17 +1278,61 @@
   });
 
   var bTailInput = document.getElementById("b-tail-input");
+  var bTailGrid = document.getElementById("b-tail-grid");
   var tailPicker = makeOrderedPicker({
     listEl: document.getElementById("b-tail-list"),
     addBtn: document.getElementById("b-tail-add"),
     clearBtn: document.getElementById("b-tail-clear"),
     getInputValue: function(){ return bTailInput.value.trim().toUpperCase(); },
     setInputValue: function(v){ bTailInput.value = v; },
-    addBtnDefaultLabel: "Add"
+    addBtnDefaultLabel: "Add",
+    onChange: function(items){ syncRouteList(items.length); }
   });
   bTailInput.addEventListener("keydown", function(ev){
     if (ev.key === "Enter"){ ev.preventDefault(); tailPicker.addOrUpdate(); bTailInput.select(); }
   });
+
+  function renderTailGrid(){
+    var fromEntries = entries.map(function(e){ return (e.ident||"").trim().toUpperCase(); }).filter(Boolean);
+    var idents = Array.from(new Set(KNOWN_IDENTS.concat(fromEntries))).sort();
+    bTailGrid.innerHTML = idents.map(function(i){
+      return "<button type='button' class='ghost small' data-tail-pick='" + esc(i) + "' style='font-family:var(--font-mono);'>" + esc(i) + "</button>";
+    }).join("");
+    bTailGrid.querySelectorAll("[data-tail-pick]").forEach(function(btn){
+      btn.addEventListener("click", function(){ tailPicker.addValue(btn.dataset.tailPick); });
+    });
+  }
+
+  // ---------- From/Stops/To route list (auto-synced to the Tail Numbers list length) ----------
+  var bRouteListEl = document.getElementById("b-route-list");
+  var bRoutes = [];
+  function syncRouteList(n){
+    while (bRoutes.length < n){
+      bRoutes.push({
+        from: (bFrom.value.trim().toUpperCase() || "KFRG"),
+        stops: "",
+        to: (bTo.value.trim().toUpperCase() || "KFRG")
+      });
+    }
+    while (bRoutes.length > n){ bRoutes.pop(); }
+    renderRouteList();
+  }
+  function renderRouteList(){
+    bRouteListEl.innerHTML = bRoutes.map(function(r, i){
+      return "<div style='display:flex; align-items:center; gap:6px; font-size:13px;'>" +
+        "<span style='color:var(--muted); font-family:var(--font-mono); min-width:20px;'>" + (i+1) + ".</span>" +
+        "<input type='text' data-route-idx='" + i + "' data-field='from' value='" + esc(r.from) + "' placeholder='From' style='width:64px; text-transform:uppercase; padding:5px 6px; font-size:13px; border:1.5px solid var(--border); border-radius:5px;'>" +
+        "<input type='text' data-route-idx='" + i + "' data-field='stops' value='" + esc(r.stops) + "' placeholder='Stops' style='flex:1; text-transform:uppercase; padding:5px 6px; font-size:13px; border:1.5px solid var(--border); border-radius:5px;'>" +
+        "<input type='text' data-route-idx='" + i + "' data-field='to' value='" + esc(r.to) + "' placeholder='To' style='width:64px; text-transform:uppercase; padding:5px 6px; font-size:13px; border:1.5px solid var(--border); border-radius:5px;'>" +
+      "</div>";
+    }).join("");
+    bRouteListEl.querySelectorAll("[data-route-idx]").forEach(function(inp){
+      inp.addEventListener("change", function(){
+        var idx = parseInt(inp.dataset.routeIdx, 10);
+        bRoutes[idx][inp.dataset.field] = inp.value.trim().toUpperCase();
+      });
+    });
+  }
 
   var datePicker = makeOrderedPicker({
     listEl: document.getElementById("b-date-list"),
@@ -1287,8 +1347,6 @@
     var models = modelPicker.getAll();
     var tails = tailPicker.getAll();
     var dates = datePicker.getAll();
-    var from = bFrom.value.trim().toUpperCase();
-    var to = bTo.value.trim().toUpperCase();
     var mirrorAsel = document.getElementById("b-mirror-asel").checked;
     var mirrorAmel = document.getElementById("b-mirror-amel").checked;
     var mirrorPic = document.getElementById("b-mirror-pic").checked;
@@ -1321,8 +1379,10 @@
       var total = parseFloat(raw);
       var errors = [];
       if (isNaN(total) || total <= 0) errors.push("\"" + raw + "\" isn't a positive number");
+      var route = bRoutes[i] || {from:"", stops:"", to:""};
       return {
-        rowNum: i + 1, date: dates[i], model: models[i], ident: tails[i], from: from, to: to,
+        rowNum: i + 1, date: dates[i], model: models[i], ident: tails[i],
+        from: route.from, via: route.stops, to: route.to,
         total: isNaN(total) ? 0 : total,
         asel: mirrorAsel ? total : 0, amel: mirrorAmel ? total : 0,
         pic: mirrorPic ? total : 0, dual: mirrorDual ? total : 0, cfi: mirrorCfi ? total : 0,
@@ -1342,7 +1402,7 @@
         "<td>" + esc(r.date) + "</td>" +
         "<td>" + esc(r.model) + "</td>" +
         "<td>" + esc(r.ident) + "</td>" +
-        "<td>" + esc([r.from,r.to].filter(Boolean).join(" \u2192 ")) + "</td>" +
+        "<td>" + esc([r.from,r.via,r.to].filter(Boolean).join(" \u2192 ")) + "</td>" +
         "<td class='num'>" + fmt1(r.total) + "</td>" +
         "<td class='num'>" + fmt1(r.asel) + "</td>" +
         "<td class='num'>" + fmt1(r.amel) + "</td>" +
@@ -1372,7 +1432,7 @@
     if (!confirm("Add " + bulkParsed.length + " flight(s) to your logbook? This adds to your existing entries \u2014 nothing gets replaced.")) return;
     bulkParsed.forEach(function(p){
       entries.push({
-        id: uid(), date: p.date, model: p.model, ident: p.ident, from: p.from, via: "", to: p.to,
+        id: uid(), date: p.date, model: p.model, ident: p.ident, from: p.from, via: p.via, to: p.to,
         total: p.total, asel: p.asel, amel: p.amel, dayLdg: 0, nightLdg: 0, night: 0,
         actualInstr: 0, simInstr: 0, approach: "", xc: 0, solo: 0,
         pic: p.pic, stupic: Math.min(p.pic, p.dual), dual: p.dual, cfi: p.cfi, remarks: ""
@@ -1382,8 +1442,8 @@
     renderEntries();
     renderModelDatalist();
     renderIdentDatalist();
+    renderTailGrid();
     renderSummary();
-    bLines.value = "";
     modelPicker.reset();
     tailPicker.reset();
     datePicker.reset();
@@ -1401,6 +1461,7 @@
     renderEntries();
     renderModelDatalist();
     renderIdentDatalist();
+    renderTailGrid();
     renderSummary();
     fillCFForm();
     document.getElementById("storage-mode").textContent = hasClaudeStorage
