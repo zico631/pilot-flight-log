@@ -184,6 +184,21 @@
 
   footer{text-align:center; color:var(--muted-dim); font-size:13px; font-weight:500; padding:20px 0 40px;}
 
+  /* ---------- Logbook page view ---------- */
+  .logbook-page-table{border-collapse:collapse; font-size:12.5px;}
+  .logbook-page-table th, .logbook-page-table td{border:1px solid var(--border);}
+  .logbook-page-table th{background:var(--panel-2); font-weight:800;}
+  .logbook-page-table td{padding:7px 6px;}
+  .logbook-page-table tfoot td{font-weight:800; background:var(--panel-2);}
+  .logbook-page-table tfoot tr.lb-total-to-date td{background:var(--cyan-dim); color:var(--cyan);}
+
+  @media print{
+    body *{visibility:hidden;}
+    #lb-printable, #lb-printable *{visibility:visible;}
+    #lb-printable{position:absolute; top:0; left:0; width:100%; margin:0; padding:0;}
+    #lb-prev, #lb-next{display:none;}
+  }
+
   @media (max-width:760px){
     header.topbar{flex-direction:column; align-items:flex-start;}
     .row.cols-3,.row.cols-4,.row.cols-5{grid-template-columns:repeat(2,1fr);}
@@ -207,6 +222,7 @@
   <nav class="tabs">
     <button class="tab-btn active" data-tab="log">Log Entries</button>
     <button class="tab-btn" data-tab="bulk">Bulk Add</button>
+    <button class="tab-btn" data-tab="logbook">Logbook View</button>
     <button class="tab-btn" data-tab="summary">Summary</button>
     <button class="tab-btn" data-tab="settings">Carried Forward &amp; Backup</button>
   </nav>
@@ -511,6 +527,69 @@
     </div>
   </section>
 
+  <!-- ============ LOGBOOK VIEW TAB ============ -->
+  <section id="tab-logbook" class="tab-panel">
+    <div class="panel">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <h2 style="margin:0;">Logbook</h2>
+        <div class="form-actions" style="margin:0;">
+          <label style="font-size:13px; font-weight:600; color:var(--text); display:flex; align-items:center; gap:6px;">
+            Rows per page
+            <select id="lb-page-size" style="width:auto; padding:6px 8px; font-size:14px; font-weight:500; background:var(--panel); border:1.5px solid var(--border); border-radius:6px; color:var(--text);">
+              <option value="10">10</option>
+              <option value="15">15</option>
+              <option value="20">20</option>
+              <option value="25">25</option>
+            </select>
+          </label>
+          <button type="button" class="ghost small" id="lb-print">Print This Page</button>
+        </div>
+      </div>
+      <p class="hint" style="margin-top:10px;">Pages read oldest-first, exactly like a paper logbook — page 1 is your first flight. Each page carries its own running totals at the bottom.</p>
+    </div>
+
+    <div id="lb-printable">
+      <div class="panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <button type="button" class="ghost small" id="lb-prev">&larr; Previous Page</button>
+          <span id="lb-page-indicator" style="font-weight:800; color:var(--text); font-size:14px;"></span>
+          <button type="button" class="ghost small" id="lb-next">Next Page &rarr;</button>
+        </div>
+        <div class="table-wrap">
+          <table id="lb-table" class="logbook-page-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Date</th>
+                <th>Make/Model</th>
+                <th>Ident</th>
+                <th>Route</th>
+                <th class="num">Total</th>
+                <th class="num">ASEL</th>
+                <th class="num">AMEL</th>
+                <th class="num">Day</th>
+                <th class="num">Night Ldg</th>
+                <th class="num">Night</th>
+                <th class="num">Act Instr</th>
+                <th class="num">Sim Instr</th>
+                <th>Approach</th>
+                <th class="num">XC</th>
+                <th class="num">Solo</th>
+                <th class="num">PIC</th>
+                <th class="num">STUPIC</th>
+                <th class="num">Dual</th>
+                <th class="num">CFI</th>
+                <th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody id="lb-tbody"></tbody>
+            <tfoot id="lb-tfoot"></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ SUMMARY TAB ============ -->
   <section id="tab-summary" class="tab-panel">
 
@@ -800,6 +879,7 @@
       btn.classList.add("active");
       document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
       if (btn.dataset.tab === "summary") renderSummary();
+      if (btn.dataset.tab === "logbook") renderLogbookPage();
     });
   });
 
@@ -1121,6 +1201,7 @@
     msg.textContent = "Saved.";
     setTimeout(function(){ msg.textContent = ""; }, 2500);
     renderSummary();
+    renderLogbookPage();
   });
 
   // ---------- export / import ----------
@@ -1165,7 +1246,7 @@
         entries = data.entries;
         carriedForward = Object.assign(emptyCF(), data.carriedForward || {});
         saveEntries(); saveCF();
-        renderEntries(); renderModelDatalist(); renderIdentDatalist(); renderTailGrid(); renderSummary(); fillCFForm();
+        renderEntries(); renderModelDatalist(); renderIdentDatalist(); renderTailGrid(); renderSummary(); renderLogbookPage(); fillCFForm();
         alert("Backup restored: " + entries.length + " flights loaded.");
       }catch(e){
         alert("That file doesn't look like a valid Pilot Flight Log backup.");
@@ -1180,7 +1261,7 @@
     entries = [];
     carriedForward = emptyCF();
     saveEntries(); saveCF();
-    renderEntries(); renderModelDatalist(); renderIdentDatalist(); renderTailGrid(); renderSummary(); fillCFForm();
+    renderEntries(); renderModelDatalist(); renderIdentDatalist(); renderTailGrid(); renderSummary(); renderLogbookPage(); fillCFForm();
   });
 
   // ---------- bulk add ----------
@@ -1444,6 +1525,7 @@
     renderIdentDatalist();
     renderTailGrid();
     renderSummary();
+    renderLogbookPage();
     modelPicker.reset();
     tailPicker.reset();
     datePicker.reset();
@@ -1454,6 +1536,155 @@
     bPreviewMsg.style.color = "var(--green)";
   });
 
+  // ---------- logbook page view ----------
+  var lbPageSize = 10;
+  var lbPageIndex = 0;
+  var lbPageSizeEl = document.getElementById("lb-page-size");
+  var lbPrevBtn = document.getElementById("lb-prev");
+  var lbNextBtn = document.getElementById("lb-next");
+  var lbPageIndicator = document.getElementById("lb-page-indicator");
+  var lbTbody = document.getElementById("lb-tbody");
+  var lbTfoot = document.getElementById("lb-tfoot");
+
+  var LB_NUMERIC_FIELDS = ["total","asel","amel","dayLdg","nightLdg","night","actualInstr","simInstr","xc","solo","pic","stupic","dual","cfi"];
+
+  function chronoEntries(){
+    var arr = entries.slice();
+    arr.sort(function(a,b){
+      var av = a.date || "", bv = b.date || "";
+      if (av < bv) return -1;
+      if (av > bv) return 1;
+      return 0;
+    });
+    return arr;
+  }
+
+  function sumFields(arr){
+    var s = {};
+    LB_NUMERIC_FIELDS.forEach(function(f){ s[f] = 0; });
+    arr.forEach(function(e){
+      LB_NUMERIC_FIELDS.forEach(function(f){ s[f] += num(e[f]); });
+    });
+    return s;
+  }
+
+  function carriedForwardAsLogbookRow(){
+    var s = {};
+    LB_NUMERIC_FIELDS.forEach(function(f){ s[f] = 0; });
+    s.total = num(carriedForward.total);
+    s.asel = num(carriedForward.asel);
+    s.amel = num(carriedForward.amel);
+    s.dayLdg = num(carriedForward.dayLdg);
+    s.nightLdg = num(carriedForward.nightLdg);
+    s.night = num(carriedForward.night);
+    s.actualInstr = num(carriedForward.actualInstr);
+    s.simInstr = num(carriedForward.simInstrAirplane) + num(carriedForward.simInstrAATD);
+    s.xc = num(carriedForward.xc);
+    s.solo = num(carriedForward.solo);
+    s.pic = num(carriedForward.pic);
+    s.stupic = num(carriedForward.stupic);
+    s.dual = num(carriedForward.dual);
+    s.cfi = num(carriedForward.cfi);
+    return s;
+  }
+
+  function addSums(a, b){
+    var out = {};
+    LB_NUMERIC_FIELDS.forEach(function(f){ out[f] = num(a[f]) + num(b[f]); });
+    return out;
+  }
+
+  function totalsRowHtml(label, sums, extraClass){
+    var cells = ["total","asel","amel","dayLdg","nightLdg","night","actualInstr","simInstr"];
+    var landingsAndTime = "<td class='num'>" + fmt1(sums.total) + "</td>" +
+      "<td class='num'>" + fmt1(sums.asel) + "</td>" +
+      "<td class='num'>" + fmt1(sums.amel) + "</td>" +
+      "<td class='num'>" + fmt0(sums.dayLdg) + "</td>" +
+      "<td class='num'>" + fmt0(sums.nightLdg) + "</td>" +
+      "<td class='num'>" + fmt1(sums.night) + "</td>" +
+      "<td class='num'>" + fmt1(sums.actualInstr) + "</td>" +
+      "<td class='num'>" + fmt1(sums.simInstr) + "</td>";
+    return "<tr" + (extraClass ? " class='" + extraClass + "'" : "") + ">" +
+      "<td colspan='4' style='text-align:right;'>" + esc(label) + "</td>" +
+      landingsAndTime +
+      "<td></td>" +
+      "<td class='num'>" + fmt1(sums.xc) + "</td>" +
+      "<td class='num'>" + fmt1(sums.solo) + "</td>" +
+      "<td class='num'>" + fmt1(sums.pic) + "</td>" +
+      "<td class='num'>" + fmt1(sums.stupic) + "</td>" +
+      "<td class='num'>" + fmt1(sums.dual) + "</td>" +
+      "<td class='num'>" + fmt1(sums.cfi) + "</td>" +
+      "<td></td>" +
+    "</tr>";
+  }
+
+  function renderLogbookPage(){
+    var chrono = chronoEntries();
+    var totalPages = Math.max(1, Math.ceil(chrono.length / lbPageSize));
+    if (lbPageIndex >= totalPages) lbPageIndex = totalPages - 1;
+    if (lbPageIndex < 0) lbPageIndex = 0;
+
+    var startIdx = lbPageIndex * lbPageSize;
+    var pageEntries = chrono.slice(startIdx, startIdx + lbPageSize);
+    var beforeEntries = chrono.slice(0, startIdx);
+
+    lbPageIndicator.textContent = chrono.length
+      ? "Page " + (lbPageIndex + 1) + " of " + totalPages
+      : "No flights logged yet";
+    lbPrevBtn.disabled = lbPageIndex === 0;
+    lbNextBtn.disabled = lbPageIndex >= totalPages - 1;
+
+    if (!pageEntries.length){
+      lbTbody.innerHTML = '<tr class="empty-row"><td colspan="21">No flights on this page.</td></tr>';
+      lbTfoot.innerHTML = "";
+      return;
+    }
+
+    lbTbody.innerHTML = pageEntries.map(function(e, i){
+      return "<tr>" +
+        "<td class='num'>" + (startIdx + i + 1) + "</td>" +
+        "<td>" + esc(e.date) + "</td>" +
+        "<td>" + esc(e.model) + "</td>" +
+        "<td>" + esc(e.ident) + "</td>" +
+        "<td>" + routeText(e) + "</td>" +
+        "<td class='num'>" + fmt1(e.total) + "</td>" +
+        "<td class='num'>" + fmt1(e.asel) + "</td>" +
+        "<td class='num'>" + fmt1(e.amel) + "</td>" +
+        "<td class='num'>" + fmt0(e.dayLdg) + "</td>" +
+        "<td class='num'>" + fmt0(e.nightLdg) + "</td>" +
+        "<td class='num'>" + fmt1(e.night) + "</td>" +
+        "<td class='num'>" + fmt1(e.actualInstr) + "</td>" +
+        "<td class='num'>" + fmt1(e.simInstr) + "</td>" +
+        "<td>" + esc(e.approach) + "</td>" +
+        "<td class='num'>" + fmt1(e.xc) + "</td>" +
+        "<td class='num'>" + fmt1(e.solo) + "</td>" +
+        "<td class='num'>" + fmt1(e.pic) + "</td>" +
+        "<td class='num'>" + fmt1(e.stupic) + "</td>" +
+        "<td class='num'>" + fmt1(e.dual) + "</td>" +
+        "<td class='num'>" + fmt1(e.cfi) + "</td>" +
+        "<td>" + esc(e.remarks) + "</td>" +
+      "</tr>";
+    }).join("");
+
+    var forwardSums = addSums(carriedForwardAsLogbookRow(), sumFields(beforeEntries));
+    var thisPageSums = sumFields(pageEntries);
+    var toDateSums = addSums(forwardSums, thisPageSums);
+
+    lbTfoot.innerHTML =
+      totalsRowHtml("Total Forward", forwardSums) +
+      totalsRowHtml("Total This Page", thisPageSums) +
+      totalsRowHtml("Total to Date", toDateSums, "lb-total-to-date");
+  }
+
+  lbPageSizeEl.addEventListener("change", function(){
+    lbPageSize = parseInt(lbPageSizeEl.value, 10) || 10;
+    lbPageIndex = 0;
+    renderLogbookPage();
+  });
+  lbPrevBtn.addEventListener("click", function(){ lbPageIndex--; renderLogbookPage(); });
+  lbNextBtn.addEventListener("click", function(){ lbPageIndex++; renderLogbookPage(); });
+  document.getElementById("lb-print").addEventListener("click", function(){ window.print(); });
+
   // ---------- init ----------
   populateDateSelects();
   loadAll().then(function(){
@@ -1463,6 +1694,7 @@
     renderIdentDatalist();
     renderTailGrid();
     renderSummary();
+    renderLogbookPage();
     fillCFForm();
     document.getElementById("storage-mode").textContent = hasClaudeStorage
       ? "Storage: synced via Claude (persists across sessions on this artifact)."
