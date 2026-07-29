@@ -20,7 +20,7 @@
     --green:#0a7d46;
     --red:#c22f2f;
     --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    --font-mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Consolas,monospace;
+    --font-mono:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     --radius:8px;
   }
   *{box-sizing:border-box;}
@@ -1001,8 +1001,8 @@
     modelOptions.innerHTML = models.map(function(m){ return "<option value='" + esc(m) + "'>"; }).join("");
   }
 
-  var KNOWN_IDENTS = ["N64949","N48590","N5253C","N9004W","N52522","N291HW","N926JA","N61942",
-    "N1517E","N1688L","N9520Z","N604ND","N345FH","N422CB","N55296","N6185U"];
+  var KNOWN_IDENTS = ["N6185U","N291HW","N9004W","N1688L","N6064R","N61942","N52522","N345FH",
+    "N55296","N422CB","N926JA","N952OZ","N6097G","N604ND","N5253C","N904ER","N997PA"];
 
   function renderIdentDatalist(){
     var fromEntries = entries.map(function(e){ return (e.ident||"").trim().toUpperCase(); }).filter(Boolean);
