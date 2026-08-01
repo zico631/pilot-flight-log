@@ -1084,8 +1084,7 @@
     modelOptions.innerHTML = models.map(function(m){ return "<option value='" + esc(m) + "'>"; }).join("");
   }
 
-  var KNOWN_IDENTS = ["N6185U","N291HW","N9004W","N1688L","N6064R","N61942","N52522","N345FH",
-    "N55296","N422CB","N926JA","N952OZ","N6097G","N604ND","N5253C","N904ER","N997PA"];
+  var KNOWN_IDENTS = ["N48590","N64949",];
 
   function renderIdentDatalist(){
     var fromEntries = entries.map(function(e){ return (e.ident||"").trim().toUpperCase(); }).filter(Boolean);
