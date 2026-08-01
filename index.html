@@ -458,6 +458,7 @@
         <h2>Tail Numbers (in order)</h2>
         <p class="hint" style="margin-bottom:10px;">Click a tail number to add it to your list. Click again for the same one — no limit. Editing an existing item? Click it in the list below first, then click its replacement here.</p>
         <div id="b-tail-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:10px;"></div>
+        <div id="b-tail-hidden-wrap"></div>
         <div class="form-actions" style="margin-top:0;">
           <input type="text" id="b-tail-input" placeholder="New tail number" style="flex:1;">
           <button type="button" class="ghost small" id="b-tail-add">Add</button>
@@ -1084,7 +1085,9 @@
     modelOptions.innerHTML = models.map(function(m){ return "<option value='" + esc(m) + "'>"; }).join("");
   }
 
-  var KNOWN_IDENTS = ["N48590","N64949",];
+  var KNOWN_IDENTS = ["N64949","N48590","N5253C","N9004W","N52522","N291HW","N926JA","N61942",
+    "N1517E","N1688L","N9520Z","N604ND","N345FH","N422CB","N55296","N6185U",
+    "N6064R","N952OZ","N6097G","N904ER","N997PA"];
 
   function renderIdentDatalist(){
     var fromEntries = entries.map(function(e){ return (e.ident||"").trim().toUpperCase(); }).filter(Boolean);
@@ -1362,6 +1365,7 @@
 
   var bTailInput = document.getElementById("b-tail-input");
   var bTailGrid = document.getElementById("b-tail-grid");
+  var bTailHiddenWrap = document.getElementById("b-tail-hidden-wrap");
   var tailPicker = makeOrderedPicker({
     listEl: document.getElementById("b-tail-list"),
     addBtn: document.getElementById("b-tail-add"),
@@ -1375,15 +1379,75 @@
     if (ev.key === "Enter"){ ev.preventDefault(); tailPicker.addOrUpdate(); bTailInput.select(); }
   });
 
+  var EYE_OPEN = "<svg viewBox='0 0 20 20' width='12' height='12' fill='none' stroke='currentColor' stroke-width='1.6'><path d='M1 10s3.2-6 9-6 9 6 9 6-3.2 6-9 6-9-6-9-6Z'/><circle cx='10' cy='10' r='2.4'/></svg>";
+  var EYE_SLASH = "<svg viewBox='0 0 20 20' width='12' height='12' fill='none' stroke='currentColor' stroke-width='1.6'><path d='M1 10s3.2-6 9-6 9 6 9 6-3.2 6-9 6-9-6-9-6Z'/><circle cx='10' cy='10' r='2.4'/><path d='M2.5 2.5l15 15'/></svg>";
+
+  function getHiddenTails(){
+    try { return new Set(JSON.parse(localStorage.getItem("pilotlog:hiddenTails") || "[]")); }
+    catch(e){ return new Set(); }
+  }
+  function saveHiddenTails(set){
+    localStorage.setItem("pilotlog:hiddenTails", JSON.stringify(Array.from(set)));
+  }
+  function toggleHiddenTail(ident){
+    var hidden = getHiddenTails();
+    if (hidden.has(ident)) hidden.delete(ident); else hidden.add(ident);
+    saveHiddenTails(hidden);
+    renderTailGrid();
+  }
+
+  var bHiddenShown = false;
+
   function renderTailGrid(){
     var fromEntries = entries.map(function(e){ return (e.ident||"").trim().toUpperCase(); }).filter(Boolean);
     var idents = Array.from(new Set(KNOWN_IDENTS.concat(fromEntries))).sort();
-    bTailGrid.innerHTML = idents.map(function(i){
-      return "<button type='button' class='ghost small' data-tail-pick='" + esc(i) + "' style='font-family:var(--font-mono);'>" + esc(i) + "</button>";
-    }).join("");
+    var hidden = getHiddenTails();
+    var visible = idents.filter(function(i){ return !hidden.has(i); });
+    var hiddenList = idents.filter(function(i){ return hidden.has(i); });
+
+    function chip(i, isHidden){
+      return "<div style='position:relative; display:inline-block;'>" +
+        "<button type='button' class='ghost small' data-tail-pick='" + esc(i) + "' style='font-family:var(--font-mono); padding-right:22px;" + (isHidden ? " opacity:0.45;" : "") + "'>" + esc(i) + "</button>" +
+        "<button type='button' data-tail-eye='" + esc(i) + "' title='" + (isHidden ? "Show" : "Hide") + " " + esc(i) + "' " +
+          "style='position:absolute; right:3px; top:50%; transform:translateY(-50%); background:none; border:none; padding:2px; color:var(--muted); cursor:pointer; display:flex;'>" +
+          (isHidden ? EYE_SLASH : EYE_OPEN) +
+        "</button>" +
+      "</div>";
+    }
+
+    var html = visible.map(function(i){ return chip(i, false); }).join("");
+    bTailGrid.innerHTML = html;
+
+    var toggleHtml = "";
+    if (hiddenList.length){
+      toggleHtml = "<div style='margin-top:8px;'>" +
+        "<button type='button' class='ghost small' id='b-hidden-toggle'>" + (bHiddenShown ? "Hide" : "Show") + " " + hiddenList.length + " hidden tail number" + (hiddenList.length===1?"":"s") + "</button>" +
+        "<div id='b-hidden-list' style='margin-top:6px; display:" + (bHiddenShown ? "flex" : "none") + "; flex-wrap:wrap; gap:6px;'>" +
+          hiddenList.map(function(i){ return chip(i, true); }).join("") +
+        "</div>" +
+      "</div>";
+    }
+    bTailHiddenWrap.innerHTML = toggleHtml;
+
     bTailGrid.querySelectorAll("[data-tail-pick]").forEach(function(btn){
       btn.addEventListener("click", function(){ tailPicker.addValue(btn.dataset.tailPick); });
     });
+    bTailGrid.querySelectorAll("[data-tail-eye]").forEach(function(btn){
+      btn.addEventListener("click", function(ev){ ev.stopPropagation(); toggleHiddenTail(btn.dataset.tailEye); });
+    });
+    var hiddenToggleBtn = document.getElementById("b-hidden-toggle");
+    if (hiddenToggleBtn){
+      hiddenToggleBtn.addEventListener("click", function(){ bHiddenShown = !bHiddenShown; renderTailGrid(); });
+    }
+    var hiddenListEl = document.getElementById("b-hidden-list");
+    if (hiddenListEl){
+      hiddenListEl.querySelectorAll("[data-tail-pick]").forEach(function(btn){
+        btn.addEventListener("click", function(){ tailPicker.addValue(btn.dataset.tailPick); });
+      });
+      hiddenListEl.querySelectorAll("[data-tail-eye]").forEach(function(btn){
+        btn.addEventListener("click", function(ev){ ev.stopPropagation(); toggleHiddenTail(btn.dataset.tailEye); });
+      });
+    }
   }
 
   // ---------- Flight Details row list (auto-synced to the Tail Numbers list length) ----------
