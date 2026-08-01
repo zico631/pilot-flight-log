@@ -483,9 +483,9 @@
       </div>
 
       <div class="panel">
-        <h2>From / Stops / To</h2>
-        <p class="hint" style="margin-bottom:10px;">Fills in automatically (From/To from the defaults above, Stops blank) as you add tail numbers. Edit any field directly if one particular flight needs a stop or a different route.</p>
-        <div id="b-route-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+        <h2>Flight Details</h2>
+        <p class="hint" style="margin-bottom:10px;">From/To fill in automatically from the defaults above as you add tail numbers; everything else starts at 0/blank. Edit any field directly for flights that need a stop, night time, instrument time, an approach, etc.</p>
+        <div id="b-route-list" style="display:flex; flex-direction:column; gap:6px; overflow-x:auto;"></div>
       </div>
     </div>
 
@@ -515,7 +515,10 @@
             <tr>
               <th>Date</th><th>Model</th><th>Ident</th><th>Route</th>
               <th class="num">Total</th><th class="num">ASEL</th><th class="num">AMEL</th>
+              <th class="num">Night</th><th class="num">Act Instr</th><th class="num">Sim Instr</th>
+              <th class="num">XC</th><th class="num">Solo</th>
               <th class="num">PIC</th><th class="num">Dual</th><th class="num">As CFI</th>
+              <th class="num">Day Ldg</th><th class="num">Night Ldg</th><th>Approach</th>
             </tr>
           </thead>
           <tbody id="b-preview-tbody"></tbody>
@@ -1384,33 +1387,76 @@
     });
   }
 
-  // ---------- From/Stops/To route list (auto-synced to the Tail Numbers list length) ----------
+  // ---------- Flight Details row list (auto-synced to the Tail Numbers list length) ----------
   var bRouteListEl = document.getElementById("b-route-list");
   var bRoutes = [];
+  var ROUTE_NUM_FIELDS = ["night","actualInstr","simInstr","xc","solo","pic","dual","cfi","dayLdg","nightLdg"];
+  function blankRoute(){
+    var r = { from: (bFrom.value.trim().toUpperCase() || "KFRG"), stops: "", to: (bTo.value.trim().toUpperCase() || "KFRG"), approach: "" };
+    ROUTE_NUM_FIELDS.forEach(function(f){ r[f] = ""; });
+    return r;
+  }
   function syncRouteList(n){
-    while (bRoutes.length < n){
-      bRoutes.push({
-        from: (bFrom.value.trim().toUpperCase() || "KFRG"),
-        stops: "",
-        to: (bTo.value.trim().toUpperCase() || "KFRG")
-      });
-    }
+    while (bRoutes.length < n){ bRoutes.push(blankRoute()); }
     while (bRoutes.length > n){ bRoutes.pop(); }
     renderRouteList();
   }
+
+  function autoSizeStops(inp){
+    var len = (inp.value || "").length;
+    inp.style.width = Math.max(70, 16 + len * 7) + "px";
+  }
+
+  var ROUTE_NUM_COL = [
+    ["night","Night"], ["actualInstr","Act Instr"], ["simInstr","Sim Instr"],
+    ["xc","XC"], ["solo","Solo"], ["pic","PIC"], ["dual","Dual Rcvd"], ["cfi","As CFI"],
+    ["dayLdg","Day Ldg"], ["nightLdg","Night Ldg"]
+  ];
+
+  function renderRouteListHeader(){
+    var html = "<div style='display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:var(--muted); padding-left:26px;'>" +
+      "<span style='width:55px;'>From</span>" +
+      "<span style='width:70px;'>Stops</span>" +
+      "<span style='width:55px;'>To</span>";
+    ROUTE_NUM_COL.forEach(function(c){
+      html += "<span style='width:46px; text-align:center;'>" + c[1] + "</span>";
+    });
+    html += "<span style='width:80px;'>Approach</span>";
+    html += "</div>";
+    return html;
+  }
+
   function renderRouteList(){
-    bRouteListEl.innerHTML = bRoutes.map(function(r, i){
-      return "<div style='display:flex; align-items:center; gap:6px; font-size:13px;'>" +
+    var rowsHtml = bRoutes.map(function(r, i){
+      var html = "<div style='display:flex; align-items:center; gap:6px; font-size:13px;'>" +
         "<span style='color:var(--muted); font-family:var(--font-mono); min-width:20px;'>" + (i+1) + ".</span>" +
-        "<input type='text' data-route-idx='" + i + "' data-field='from' value='" + esc(r.from) + "' placeholder='From' style='width:64px; text-transform:uppercase; padding:5px 6px; font-size:13px; border:1.5px solid var(--border); border-radius:5px;'>" +
-        "<input type='text' data-route-idx='" + i + "' data-field='stops' value='" + esc(r.stops) + "' placeholder='Stops' style='flex:1; text-transform:uppercase; padding:5px 6px; font-size:13px; border:1.5px solid var(--border); border-radius:5px;'>" +
-        "<input type='text' data-route-idx='" + i + "' data-field='to' value='" + esc(r.to) + "' placeholder='To' style='width:64px; text-transform:uppercase; padding:5px 6px; font-size:13px; border:1.5px solid var(--border); border-radius:5px;'>" +
-      "</div>";
+        "<input type='text' data-route-idx='" + i + "' data-field='from' value='" + esc(r.from) + "' placeholder='From' style='width:55px; text-transform:uppercase; padding:5px 6px; font-size:13px; border:1.5px solid var(--border); border-radius:5px;'>" +
+        "<input type='text' data-route-idx='" + i + "' data-field='stops' data-autogrow='1' value='" + esc(r.stops) + "' placeholder='Stops' style='width:70px; text-transform:uppercase; padding:5px 6px; font-size:13px; border:1.5px solid var(--border); border-radius:5px;'>" +
+        "<input type='text' data-route-idx='" + i + "' data-field='to' value='" + esc(r.to) + "' placeholder='To' style='width:55px; text-transform:uppercase; padding:5px 6px; font-size:13px; border:1.5px solid var(--border); border-radius:5px;'>";
+      ROUTE_NUM_COL.forEach(function(c){
+        html += "<input type='number' step='0.1' min='0' inputmode='decimal' data-route-idx='" + i + "' data-field='" + c[0] + "' value='" + esc(r[c[0]]) + "' placeholder='0' style='width:46px; text-align:center; padding:5px 4px; font-size:13px; border:1.5px solid var(--border); border-radius:5px;'>";
+      });
+      html += "<input type='text' data-route-idx='" + i + "' data-field='approach' value='" + esc(r.approach) + "' placeholder='e.g. 2 ILS' style='width:80px; padding:5px 6px; font-size:13px; border:1.5px solid var(--border); border-radius:5px;'>";
+      html += "</div>";
+      return html;
     }).join("");
+    bRouteListEl.innerHTML = renderRouteListHeader() + rowsHtml;
+
     bRouteListEl.querySelectorAll("[data-route-idx]").forEach(function(inp){
+      if (inp.dataset.autogrow) autoSizeStops(inp);
+      if (inp.dataset.autogrow){
+        inp.addEventListener("input", function(){ autoSizeStops(inp); });
+      }
       inp.addEventListener("change", function(){
         var idx = parseInt(inp.dataset.routeIdx, 10);
-        bRoutes[idx][inp.dataset.field] = inp.value.trim().toUpperCase();
+        var field = inp.dataset.field;
+        if (inp.type === "number"){
+          bRoutes[idx][field] = inp.value === "" ? "" : inp.value;
+        } else if (field === "approach"){
+          bRoutes[idx][field] = inp.value.trim();
+        } else {
+          bRoutes[idx][field] = inp.value.trim().toUpperCase();
+        }
       });
     });
   }
@@ -1460,13 +1506,20 @@
       var total = parseFloat(raw);
       var errors = [];
       if (isNaN(total) || total <= 0) errors.push("\"" + raw + "\" isn't a positive number");
-      var route = bRoutes[i] || {from:"", stops:"", to:""};
+      var route = bRoutes[i] || blankRoute();
+      function n(field, mirrorFlag){
+        if (route[field] !== "" && route[field] != null) return parseFloat(route[field]) || 0;
+        return mirrorFlag ? total : 0;
+      }
       return {
         rowNum: i + 1, date: dates[i], model: models[i], ident: tails[i],
         from: route.from, via: route.stops, to: route.to,
         total: isNaN(total) ? 0 : total,
         asel: mirrorAsel ? total : 0, amel: mirrorAmel ? total : 0,
-        pic: mirrorPic ? total : 0, dual: mirrorDual ? total : 0, cfi: mirrorCfi ? total : 0,
+        pic: n("pic", mirrorPic), dual: n("dual", mirrorDual), cfi: n("cfi", mirrorCfi),
+        night: n("night"), actualInstr: n("actualInstr"), simInstr: n("simInstr"),
+        xc: n("xc"), solo: n("solo"), dayLdg: n("dayLdg"), nightLdg: n("nightLdg"),
+        approach: route.approach || "",
         errors: errors
       };
     });
@@ -1477,7 +1530,7 @@
     bPreviewWrap.style.display = "block";
     bPreviewTbody.innerHTML = rows.map(function(r){
       if (r.errors.length){
-        return "<tr><td colspan='10' style='color:var(--red); font-weight:600;'>Row " + r.rowNum + " \u2014 " + esc(r.errors.join("; ")) + "</td></tr>";
+        return "<tr><td colspan='18' style='color:var(--red); font-weight:600;'>Row " + r.rowNum + " \u2014 " + esc(r.errors.join("; ")) + "</td></tr>";
       }
       return "<tr>" +
         "<td>" + esc(r.date) + "</td>" +
@@ -1487,9 +1540,17 @@
         "<td class='num'>" + fmt1(r.total) + "</td>" +
         "<td class='num'>" + fmt1(r.asel) + "</td>" +
         "<td class='num'>" + fmt1(r.amel) + "</td>" +
+        "<td class='num'>" + fmt1(r.night) + "</td>" +
+        "<td class='num'>" + fmt1(r.actualInstr) + "</td>" +
+        "<td class='num'>" + fmt1(r.simInstr) + "</td>" +
+        "<td class='num'>" + fmt1(r.xc) + "</td>" +
+        "<td class='num'>" + fmt1(r.solo) + "</td>" +
         "<td class='num'>" + fmt1(r.pic) + "</td>" +
         "<td class='num'>" + fmt1(r.dual) + "</td>" +
         "<td class='num'>" + fmt1(r.cfi) + "</td>" +
+        "<td class='num'>" + fmt0(r.dayLdg) + "</td>" +
+        "<td class='num'>" + fmt0(r.nightLdg) + "</td>" +
+        "<td>" + esc(r.approach) + "</td>" +
       "</tr>";
     }).join("");
 
@@ -1514,8 +1575,8 @@
     bulkParsed.forEach(function(p){
       entries.push({
         id: uid(), date: p.date, model: p.model, ident: p.ident, from: p.from, via: p.via, to: p.to,
-        total: p.total, asel: p.asel, amel: p.amel, dayLdg: 0, nightLdg: 0, night: 0,
-        actualInstr: 0, simInstr: 0, approach: "", xc: 0, solo: 0,
+        total: p.total, asel: p.asel, amel: p.amel, dayLdg: p.dayLdg, nightLdg: p.nightLdg, night: p.night,
+        actualInstr: p.actualInstr, simInstr: p.simInstr, approach: p.approach, xc: p.xc, solo: p.solo,
         pic: p.pic, stupic: Math.min(p.pic, p.dual), dual: p.dual, cfi: p.cfi, remarks: ""
       });
     });
