@@ -139,6 +139,9 @@
   /* ---------- Tables ---------- */
   .table-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius);}
   table{width:100%; border-collapse:collapse; font-size:14px; min-width:960px;}
+  #entries-table{font-size:11px; min-width:0;}
+  #entries-table td{padding:5px 3px;}
+  #entries-table th{padding:6px 3px; font-size:10px;}
   thead th{
     background:var(--panel-2); color:var(--text); text-transform:uppercase;
     font-size:11.5px; font-weight:800; letter-spacing:0.5px; text-align:left; padding:10px 8px;
@@ -185,10 +188,10 @@
   footer{text-align:center; color:var(--muted-dim); font-size:13px; font-weight:500; padding:20px 0 40px;}
 
   /* ---------- Logbook page view ---------- */
-  .logbook-page-table{border-collapse:collapse; font-size:12.5px;}
+  .logbook-page-table{border-collapse:collapse; font-size:11px; min-width:0;}
   .logbook-page-table th, .logbook-page-table td{border:1px solid var(--border);}
-  .logbook-page-table th{background:var(--panel-2); font-weight:800;}
-  .logbook-page-table td{padding:7px 6px;}
+  .logbook-page-table th{background:var(--panel-2); font-weight:800; padding:6px 4px; font-size:10px;}
+  .logbook-page-table td{padding:5px 4px;}
   .logbook-page-table tfoot td{font-weight:800; background:var(--panel-2);}
   .logbook-page-table tfoot tr.lb-total-to-date td{background:var(--cyan-dim); color:var(--cyan);}
 
